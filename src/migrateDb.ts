@@ -7,7 +7,9 @@ export async function migrateDb() {
 
   const client = new pg.Client({
     connectionString: appConfig.DATABASE_URL,
-    ssl: appConfig.NODE_ENV === "production",
+    ssl: {
+      rejectUnauthorized: false,
+    },
   });
   await client.connect();
   try {
