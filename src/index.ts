@@ -5,6 +5,7 @@ import { Message } from "./messages/messages.interfaces";
 import { handleIncomingMessage } from "./messages/messages.controller";
 import MessagingResponse from "twilio/lib/twiml/MessagingResponse";
 import { client } from "./db";
+import { logMessage } from "./messagesLog/messagesLog.controller";
 
 const app = express();
 const router = Router();
@@ -22,9 +23,21 @@ router.get("/health", (_, res) => {
 router.post("/", async (req, res) => {
   const body = req.body as Message;
   console.log("message", body.Body);
+  await logMessage(client, {
+    body: body.Body,
+    direction: "IN",
+    from: body.WaId,
+    to: "SYSTEM",
+  });
   const response = await handleIncomingMessage(client, body);
   const twiml = new MessagingResponse();
   twiml.message(response);
+  await logMessage(client, {
+    body: response,
+    direction: "OUT",
+    from: "SYSTEM",
+    to: body.WaId,
+  });
   res.type("text/xml").send(twiml.toString());
 
   //   twilioClient.messages
