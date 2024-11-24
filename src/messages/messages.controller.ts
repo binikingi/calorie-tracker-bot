@@ -11,6 +11,10 @@ export async function handleIncomingMessage(
   client: Client,
   message: Message
 ): Promise<string> {
+  const accountId = await getAcountIdByWHatsappNumber(client, message.WaId);
+  if (accountId === null) {
+    return `היי, אתה חדש כאן בשביל להתחיל להשתמש בבוט נא לרשום ׳הרשמה׳`;
+  }
   if (message.Body === "הרשמה") {
     return handleRegistration(client, message);
   }
