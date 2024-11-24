@@ -1,17 +1,29 @@
 import { migrate } from "postgres-migrations";
 import { appConfig } from "./appConfig";
+import pg from "pg";
 
 export async function migrateDb() {
-  const url = new URL(appConfig.DATABASE_URL);
+  //   const url = new URL(appConfig.DATABASE_URL);
 
-  await migrate(
-    {
-      database: url.pathname.substr(1),
-      user: url.username,
-      password: url.password,
-      host: url.hostname,
-      port: parseInt(url.port, 10),
-    },
-    "./migrations"
-  );
+  const client = new pg.Client({
+    connectionString: appConfig.DATABASE_URL,
+    ssl: appConfig.NODE_ENV === "production",
+  });
+  await client.connect();
+  try {
+    await migrate({ client }, "./migrations");
+  } finally {
+    await client.end();
+  }
+  //   await migrate(
+  //     {
+  //       database: url.pathname.substr(1),
+  //       user: url.username,
+  //       password: url.password,
+  //       host: url.hostname,
+  //       port: parseInt(url.port, 10),
+  //       client,
+  //     },
+  //     "./migrations"
+  //   );
 }
