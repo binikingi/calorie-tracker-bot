@@ -1,13 +1,18 @@
 import { convert, Instant, LocalDate, ZoneId } from "@js-joda/core";
-import { db } from "../db";
 import { getFormattedLogMessageByDate } from "../foodLog/foodLog.controller";
 import { Message } from "./messages.interfaces";
 import "@js-joda/timezone";
 import { getNutritionValues } from "../gpt/gpt.controller";
+import { Client } from "pg";
 
-export async function handleIncomingMessage(message: Message): Promise<string> {
+import { sql } from "@ts-safeql/sql-tag";
+
+export async function handleIncomingMessage(
+  client: Client,
+  message: Message
+): Promise<string> {
   if (message.Body === "הרשמה") {
-    return handleRegistration(message);
+    return handleRegistration(client, message);
   }
   if (message.Body === "?") {
     return handleDisplayHelp();
@@ -17,19 +22,28 @@ export async function handleIncomingMessage(message: Message): Promise<string> {
     message.Body.startsWith("!") ||
     message.Body.startsWith("תפריט")
   ) {
-    return handleShowSummaryMessage(message, message.Body.startsWith("תפריט"));
+    return handleShowSummaryMessage(
+      client,
+      message,
+      message.Body.startsWith("תפריט")
+    );
   }
 
-  return handleLogFood(message);
+  return handleLogFood(client, message);
 }
 
-async function handleShowSummaryMessage(message: Message, withMenu: boolean) {
+async function handleShowSummaryMessage(
+  client: Client,
+  message: Message,
+  withMenu: boolean
+) {
   if (
     message.Body === "תראה" ||
     message.Body === "!" ||
     message.Body === "תפריט"
   ) {
     return await getFormattedLogMessageByDate(
+      client,
       message.WaId,
       Instant.now().atZone(ZoneId.of("Asia/Jerusalem")).toLocalDate(),
       withMenu
@@ -39,6 +53,7 @@ async function handleShowSummaryMessage(message: Message, withMenu: boolean) {
   const [, variable] = message.Body.split(" ");
   if (variable === "אתמול") {
     return await getFormattedLogMessageByDate(
+      client,
       message.WaId,
       Instant.now()
         .atZone(ZoneId.of("Asia/Jerusalem"))
@@ -49,6 +64,7 @@ async function handleShowSummaryMessage(message: Message, withMenu: boolean) {
   }
   if (variable === "שלשום") {
     return await getFormattedLogMessageByDate(
+      client,
       message.WaId,
       Instant.now()
         .atZone(ZoneId.of("Asia/Jerusalem"))
@@ -59,6 +75,7 @@ async function handleShowSummaryMessage(message: Message, withMenu: boolean) {
   }
 
   return await getFormattedLogMessageByDate(
+    client,
     message.WaId,
     getDateFromText(variable),
     withMenu
@@ -88,53 +105,56 @@ async function handleDisplayHelp() {
   return newMessage;
 }
 
-async function handleRegistration(message: Message) {
-  const [row] = await db<{ id: number; whatsapp_number: string }[]>`
-        SELECT *
-        FROM account
-        WHERE whatsapp_number = ${message.WaId}
-    `;
-
-  if (row) {
+async function handleRegistration(client: Client, message: Message) {
+  const { rows } = await client.query<{
+    id: number;
+    whatsapp_number: string;
+  }>(sql`
+    SELECT *
+    FROM account
+    WHERE whatsapp_number = ${message.WaId}
+    `);
+  if (rows.length > 0) {
     return `אתה כבר רשום למערכת, שלח '?' לעזרה`;
   } else {
-    await db`
+    await client.query(sql`
         INSERT INTO account (whatsapp_number)
         VALUES (${message.WaId})
-    `;
+    `);
 
     return "ברוכים הבאים ל-EatBot\nנרשמת בהצלחה למערכת, שלח '?' לעזרה";
   }
 }
 
-async function handleLogFood(message: Message): Promise<string> {
+async function handleLogFood(
+  client: Client,
+  message: Message
+): Promise<string> {
   const nowLocalDate = Instant.now()
     .atZone(ZoneId.of("Asia/Jerusalem"))
     .toLocalDate();
   const date = convert(nowLocalDate).toDate();
-  const accountId = await getAcountIdByWHatsappNumber(message.WaId);
+  const accountId = await getAcountIdByWHatsappNumber(client, message.WaId);
   if (accountId === null) {
     // This means the user is not registered
     return "אתה צריך להירשם למערכת קודם, שלח 'הרשמה'";
   }
   const foods = message.Body.split(",");
-  const rows = await db<
-    {
-      id: number;
-      name: string;
-      proteing_gram: number;
-      fat_gram: number;
-      carb_gram: number;
-      calorie: number;
-    }[]
-  >`
+  const { rows } = await client.query<{
+    id: number;
+    name: string;
+    proteing_gram: number;
+    fat_gram: number;
+    carb_gram: number;
+    calorie: number;
+  }>(sql`
     SELECT *
     FROM food_dictionary
-    WHERE name = ANY(${db.array(foods.map((food) => food.trim()))})
-  `;
+    WHERE name = ANY(${foods.map((food) => food.trim())})
+  `);
 
   for (const row of rows) {
-    await insertFoodLog(accountId, {
+    await insertFoodLog(client, accountId, {
       calorie: row.calorie,
       carbGram: row.carb_gram,
       date: date,
@@ -162,14 +182,14 @@ async function handleLogFood(message: Message): Promise<string> {
         continue;
       }
       foundFoods.push(food.name);
-      await insertFoodDictionary({
+      await insertFoodDictionary(client, {
         name: food.name,
         calorie: food.calories,
         carbGram: food.carbGrams,
         fatGram: food.fatGrams,
         proteingGram: food.proteinGrams,
       });
-      await insertFoodLog(accountId, {
+      await insertFoodLog(client, accountId, {
         calorie: food.calories,
         carbGram: food.carbGrams,
         date: date,
@@ -183,10 +203,16 @@ async function handleLogFood(message: Message): Promise<string> {
   return `הוספתי:
 ${foundFoods.join(", ")}
 סיכום יומי:
-${await getFormattedLogMessageByDate(message.WaId, nowLocalDate, false)}`;
+${await getFormattedLogMessageByDate(
+  client,
+  message.WaId,
+  nowLocalDate,
+  false
+)}`;
 }
 
 async function insertFoodLog(
+  client: Client,
   accountId: number,
   params: {
     foodName: string;
@@ -197,7 +223,7 @@ async function insertFoodLog(
     calorie: number;
   }
 ) {
-  await db`
+  await client.query(sql`
     INSERT INTO account_food_log (
       account_id,
       food_name,
@@ -215,32 +241,36 @@ async function insertFoodLog(
       ${params.carbGram},
       ${params.calorie}
     )
-  `;
+  `);
 }
 
 async function getAcountIdByWHatsappNumber(
+  client: Client,
   whatsappNumber: string
 ): Promise<number | null> {
-  const [row] = await db<{ id: number }[]>`
+  const { rows } = await client.query<{ id: number }>(sql`
     SELECT id
     FROM account
     WHERE whatsapp_number = ${whatsappNumber}
-  `;
+  `);
 
-  if (!row) {
+  if (rows.length === 0) {
     return null;
   }
-  return row.id;
+  return rows[0].id;
 }
 
-async function insertFoodDictionary(params: {
-  name: string;
-  calorie: number | null;
-  carbGram: number | null;
-  fatGram: number | null;
-  proteingGram: number | null;
-}) {
-  await db`
+async function insertFoodDictionary(
+  client: Client,
+  params: {
+    name: string;
+    calorie: number | null;
+    carbGram: number | null;
+    fatGram: number | null;
+    proteingGram: number | null;
+  }
+) {
+  await client.query(sql`
     INSERT INTO food_dictionary (
       name,
       calorie,
@@ -254,5 +284,5 @@ async function insertFoodDictionary(params: {
       ${params.fatGram},
       ${params.proteingGram}
     )
-  `;
+  `);
 }

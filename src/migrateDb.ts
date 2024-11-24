@@ -1,16 +1,8 @@
 import { migrate } from "postgres-migrations";
-import { appConfig } from "./appConfig";
-import pg from "pg";
+import { client } from "./db";
 
 export async function migrateDb() {
   //   const url = new URL(appConfig.DATABASE_URL);
-
-  const client = new pg.Client({
-    connectionString: appConfig.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
   await client.connect();
   try {
     await migrate({ client }, "./migrations");

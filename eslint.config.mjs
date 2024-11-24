@@ -11,11 +11,6 @@ export default tseslint.config(
     // The URL of the database:
     databaseUrl: "postgres://postgres:postgres@localhost:5432/calorie_tracker",
     // Check all of the queries that are used with the `sql` tag:
-    targets: [{ tag: "db", transform: "{type}[]"}],
-    overrides: {
-      types: {
-        _text: "ArrayParameter<string[]>"
-      }
-    }
+    targets: [{ wrapper: "client.query" }],
   }),
 );

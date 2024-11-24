@@ -1,7 +1,9 @@
 import { convert, DateTimeFormatter, LocalDate } from "@js-joda/core";
-import { db } from "../db";
+import { Client } from "pg";
+import { sql } from "@ts-safeql/sql-tag";
 
 export async function getFormattedLogMessageByDate(
+  client: Client,
   whatsappNumber: string,
   date: LocalDate,
   withMenu: boolean
@@ -9,15 +11,13 @@ export async function getFormattedLogMessageByDate(
   const fromDate = convert(date.atStartOfDay()).toDate();
   const toDate = convert(date.plusDays(1).atStartOfDay()).toDate();
 
-  const rows = await db<
-    {
-      food_name: string;
-      proteing_gram: number;
-      fat_gram: number;
-      carb_gram: number;
-      calorie: number;
-    }[]
-  >`
+  const { rows } = await client.query<{
+    food_name: string;
+    proteing_gram: number;
+    fat_gram: number;
+    carb_gram: number;
+    calorie: number;
+  }>(sql`
             SELECT
                 food_name,
                 proteing_gram,
@@ -29,7 +29,7 @@ export async function getFormattedLogMessageByDate(
             WHERE whatsapp_number = ${whatsappNumber}
             AND date >= ${fromDate}
             AND date < ${toDate}
-        `;
+        `);
 
   if (rows.length === 0) {
     return `לא הכנסת עדיין נתונים למערכת לתאריך ${date.format(
