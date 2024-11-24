@@ -12,16 +12,3 @@ export const client = new pg.Client({
         }
       : false,
 });
-
-export async function withConnection<T>(cb: (client: pg.Client) => Promise<T>) {
-  await client.connect();
-  try {
-    const response = await cb(client);
-    await client.end();
-    return response;
-  } catch (error) {
-    console.error(error);
-  } finally {
-    await client.end();
-  }
-}
