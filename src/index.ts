@@ -15,6 +15,10 @@ app.use(express.json());
 
 app.use(router);
 
+router.get("/health", (_, res) => {
+  res.json({ status: "ok" });
+});
+
 router.post("/", async (req, res) => {
   const body = req.body as Message;
   console.log("message", body.Body);
