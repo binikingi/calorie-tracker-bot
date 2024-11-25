@@ -4,7 +4,6 @@ import { Message } from "./messages.interfaces";
 import "@js-joda/timezone";
 import { getNutritionValues } from "../gpt/gpt.controller";
 import { Client } from "pg";
-
 import { sql } from "@ts-safeql/sql-tag";
 
 export async function handleIncomingMessage(
@@ -14,17 +13,20 @@ export async function handleIncomingMessage(
   if (message.Body === "הרשמה") {
     return handleRegistration(client, message);
   }
-  const accountId = await getAcountIdByWHatsappNumber(client, message.WaId);
+  const accountId = await getAccountIdByWhatsappNumber(client, message.WaId);
   if (accountId === null) {
-    return `היי, אתה חדש כאן בשביל להתחיל להשתמש בבוט נא לרשום ׳הרשמה׳`;
+    return getNotRegisteredMessage();
   }
-  if (message.Body === "?") {
+  if (message.Body.trim() === "?") {
     return handleDisplayHelp();
   }
   if (
-    message.Body.startsWith("תראה") ||
-    message.Body.startsWith("!") ||
-    message.Body.startsWith("תפריט")
+    message.Body === "תראה" ||
+    message.Body === "!" ||
+    message.Body === "תפריט" ||
+    message.Body.startsWith("תראה ") ||
+    message.Body.startsWith("! ") ||
+    message.Body.startsWith("תפריט ")
   ) {
     return handleShowSummaryMessage(
       client,
@@ -33,7 +35,32 @@ export async function handleIncomingMessage(
     );
   }
 
-  return handleLogFood(client, message);
+  if (message.Body.startsWith("הוסף ")) {
+    return handleLogFood(client, message);
+  }
+
+  if (message.Body.startsWith("בדוק ")) {
+    return handleCheckFoodNutritionValues(client, message.Body);
+  }
+
+  if (
+    message.Body === "משקל" ||
+    message.Body === "גובה" ||
+    message.Body === "שנת לידה" ||
+    message.Body === "מין" ||
+    message.Body.startsWith("משקל ") ||
+    message.Body.startsWith("גובה ") ||
+    message.Body.startsWith("מין ") ||
+    message.Body.startsWith("שנת לידה ")
+  ) {
+    return await handleAccountMeasures(client, message);
+  }
+
+  if (message.Body === "חשב") {
+    return await handleCalculateDailyCalories(client, message);
+  }
+
+  return "אני לא מבין אותך, שלח '?' לעזרה";
 }
 
 async function handleShowSummaryMessage(
@@ -99,20 +126,46 @@ function getDateFromText(text: string) {
 }
 
 async function handleDisplayHelp() {
-  const newMessage = `
-*פקודות*:
-כדי לתעד מאכל שצרכת פשוט מקלידים את המכאל ואת הכמות לדוגמא: *״100 גרם אורז לבן״*
-כדי להציג דף זה: *״?״*
-כדי להציג סיכום יומי: *״תראה״* או *״!״*
-כדי לראות תאריך אחר: *״תראה 21.11״*
-כדי לראות את כל התפריט שאכלת: *״תפריט״* או *״תפריט 21.11״*`;
-  return newMessage;
+  const newLinoyMessage = `כך תוכל להשתמש בי:
+
+1) כדי *לתעד מאכל שצרכת*:
+ רשום ״*הוסף*״ + מה אכלת וכמה אכלת
+_לדוגמא_: ״הוסף 100 גרם אורז לבן״ 
+
+2) כדי לבדוק *שווי קלוריות*:
+רשום ״*בדוק*״ 
+_לדוגמא_: ״בדוק 100 גרם אורז לבן״
+
+3) כדי להציג *סיכום יומי*: 
+רשום ״*תראה*״ או ״!״
+
+4) כדי לצפות *בתאריך אחר*:
+רשום ״*תראה*״ + תאריך
+_לדוגמא_: ״תראה 21.11״
+
+5) כדי לראות את כל *התפריט שאכלת*:
+ רשום ״*תפריט*״ או ״תפריט״ + תאריך
+_לדוגמה_: ״תפריט 21.11״
+
+6) כדי *לעדכן* משקל/גיל/גובה 
+רשום ״*משקל*״ + המשקל שלך
+_לדוגמה_: ״משקל 62״ או ״גובה 157״ או ״גיל 25״
+
+7) כדי לחשב *צריכת קלוריות יומית*:
+רשום ״חשב״
+
+* בכל שלב ניתן להקיש ״?״ לכדי לצפות בדף זה.`;
+  return newLinoyMessage;
 }
 
 async function handleRegistration(client: Client, message: Message) {
   const { rows } = await client.query<{
     id: number;
     whatsapp_number: string;
+    weight: number | null;
+    height: number | null;
+    year_of_birth: number | null;
+    gender: string | null;
   }>(sql`
     SELECT *
     FROM account
@@ -134,16 +187,17 @@ async function handleLogFood(
   client: Client,
   message: Message
 ): Promise<string> {
+  const clearedMessage = message.Body.replace("הוסף", "").trim();
   const nowLocalDate = Instant.now()
     .atZone(ZoneId.of("Asia/Jerusalem"))
     .toLocalDate();
   const date = convert(nowLocalDate).toDate();
-  const accountId = await getAcountIdByWHatsappNumber(client, message.WaId);
+  const accountId = await getAccountIdByWhatsappNumber(client, message.WaId);
   if (accountId === null) {
     // This means the user is not registered
     return "אתה צריך להירשם למערכת קודם, שלח 'הרשמה'";
   }
-  const foods = message.Body.split(",");
+  const foods = clearedMessage.split(",").map((food) => food.trim());
   const { rows } = await client.query<{
     id: number;
     name: string;
@@ -154,7 +208,7 @@ async function handleLogFood(
   }>(sql`
     SELECT *
     FROM food_dictionary
-    WHERE name = ANY(${foods.map((food) => food.trim())})
+    WHERE name = ANY(${foods})
   `);
 
   for (const row of rows) {
@@ -248,7 +302,38 @@ async function insertFoodLog(
   `);
 }
 
-async function getAcountIdByWHatsappNumber(
+async function getAccountDataByWhatsappNumber(
+  client: Client,
+  whatsappNumber: string
+) {
+  const { rows } = await client.query<{
+    id: number;
+    whatsapp_number: string;
+    weight: number | null;
+    height: number | null;
+    year_of_birth: number | null;
+    gender: string | null;
+  }>(sql`
+      SELECT *
+      FROM account
+      WHERE whatsapp_number = ${whatsappNumber}
+  `);
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return {
+    accountId: rows[0].id,
+    weight: rows[0].weight,
+    height: rows[0].height,
+    yearOfBirth: rows[0].year_of_birth,
+    gender: rows[0].gender,
+    whatsappNumber: rows[0].whatsapp_number,
+  };
+}
+
+async function getAccountIdByWhatsappNumber(
   client: Client,
   whatsappNumber: string
 ): Promise<number | null> {
@@ -273,8 +358,8 @@ async function insertFoodDictionary(
     fatGram: number | null;
     proteingGram: number | null;
   }
-) {
-  await client.query(sql`
+): Promise<number> {
+  const { rows } = await client.query<{ id: number }>(sql`
     INSERT INTO food_dictionary (
       name,
       calorie,
@@ -288,5 +373,203 @@ async function insertFoodDictionary(
       ${params.fatGram},
       ${params.proteingGram}
     )
+    RETURNING id
   `);
+
+  return rows[0].id;
+}
+
+async function handleCheckFoodNutritionValues(
+  client: Client,
+  Body: string
+): Promise<string> {
+  const clearedName = Body.replace("בדוק", "").trim();
+  const foods = clearedName.split(",").map((food) => food.trim());
+  const { rows } = await client.query<{
+    id: number;
+    name: string;
+    proteing_gram: number;
+    fat_gram: number;
+    carb_gram: number;
+    calorie: number;
+  }>(sql`
+    SELECT *
+    FROM food_dictionary
+    WHERE name = ANY(${foods})
+  `);
+
+  const foundFoods = rows.map((row) => row.name);
+  const leftOverFoods = foods.filter((food) => !foundFoods.includes(food));
+
+  if (leftOverFoods.length > 0) {
+    const nutritionValues = await getNutritionValues(leftOverFoods.join(", "));
+    for (const food of nutritionValues.data) {
+      if (
+        food.calories === null ||
+        food.carbGrams === null ||
+        food.fatGrams === null ||
+        food.proteinGrams === null
+      ) {
+        continue;
+      }
+      const foodId = await insertFoodDictionary(client, {
+        name: food.name,
+        calorie: food.calories,
+        carbGram: food.carbGrams,
+        fatGram: food.fatGrams,
+        proteingGram: food.proteinGrams,
+      });
+      foundFoods.push(food.name);
+      rows.push({
+        calorie: food.calories,
+        carb_gram: food.carbGrams,
+        fat_gram: food.fatGrams,
+        id: foodId,
+        name: food.name,
+        proteing_gram: food.proteinGrams,
+      });
+    }
+  }
+
+  return rows
+    .map((row) =>
+      `
+    *${row.name}*\n\n🥛 חלבון: ${row.proteing_gram.toFixed(
+        2
+      )}\n🥜 שומן: ${row.fat_gram.toFixed(
+        2
+      )}\n🥐 פחמימה: ${row.carb_gram.toFixed(
+        2
+      )}\n✅ קלוריות: ${row.calorie.toFixed(2)}`.trim()
+    )
+    .join("\n\n\n");
+}
+
+const accountMeasuresMap: Record<
+  string,
+  "weight" | "height" | "yearOfBirth" | "gender"
+> = {
+  משקל: "weight",
+  גובה: "height",
+  "שנת לידה": "yearOfBirth",
+  מין: "gender",
+};
+
+async function handleAccountMeasures(client: Client, message: Message) {
+  if (
+    message.Body === "גובה" ||
+    message.Body === "משקל" ||
+    message.Body === "שנת לידה" ||
+    message.Body === "מין"
+  ) {
+    const accountData = await getAccountDataByWhatsappNumber(
+      client,
+      message.WaId
+    );
+    if (accountData === null) {
+      return getNotRegisteredMessage();
+    }
+    const measure = accountData[accountMeasuresMap[message.Body]] ?? "לא נקבע";
+    return `ה${message.Body} המעודכן הוא: ${measure}`;
+  }
+
+  if (message.Body.startsWith("מין ")) {
+    const newGender = message.Body.split(" ")[1].trim();
+    if (newGender !== "גבר" && newGender !== "אישה") {
+      return "המין צריך להיות גבר או אישה";
+    }
+    await client.query(sql`
+      UPDATE account
+      SET gender = ${newGender}
+      WHERE whatsapp_number = ${message.WaId}
+    `);
+    return "המין עודכן בהצלחה";
+  }
+
+  if (message.Body.startsWith("משקל ")) {
+    const newWeightStr = message.Body.split(" ")[1].trim();
+    const newWeight = parseInt(newWeightStr, 10);
+    if (isNaN(newWeight) || newWeight < 0) {
+      return "המשקל צריך להיות מספר הגיוני";
+    }
+    await client.query(sql`
+      UPDATE account
+      SET weight = ${newWeight}
+      WHERE whatsapp_number = ${message.WaId}
+    `);
+    return "המשקל עודכן בהצלחה";
+  }
+
+  if (message.Body.startsWith("גובה ")) {
+    const newHeightStr = message.Body.split(" ")[1].trim();
+    const newHeight = parseInt(newHeightStr, 10);
+    if (isNaN(newHeight) || newHeight < 0) {
+      return "הגובה צריך להיות מספר הגיוני";
+    }
+    await client.query(sql`
+      UPDATE account
+      SET height = ${newHeight}
+      WHERE whatsapp_number = ${message.WaId}
+    `);
+    return "הגובה עודכן בהצלחה";
+  }
+
+  if (message.Body.startsWith("שנת לידה ")) {
+    const newYearOfBirth = message.Body.split(" ")[2].trim();
+    const newYear = parseInt(newYearOfBirth, 10);
+    if (isNaN(newYear) || newYear < 1900 || newYear > LocalDate.now().year()) {
+      return "שנת הלידה צריכה להיות מספר הגיוני";
+    }
+    await client.query(sql`
+      UPDATE account
+      SET year_of_birth = ${newYear}
+      WHERE whatsapp_number = ${message.WaId}
+    `);
+    return "שנת הלידה עודכנה בהצלחה";
+  }
+
+  return "אני לא מבין אותך, שלח '?' לעזרה";
+}
+
+function getNotRegisteredMessage(): string {
+  return `היי, אנחנו לא מכירים 😀. בשביל להתחיל להשתמש בבוט נא לכתוב 'הרשמה'`;
+}
+
+async function handleCalculateDailyCalories(
+  client: Client,
+  message: Message
+): Promise<string> {
+  const accountData = await getAccountDataByWhatsappNumber(
+    client,
+    message.WaId
+  );
+  if (accountData === null) {
+    return getNotRegisteredMessage();
+  }
+
+  if (
+    accountData.gender === null ||
+    accountData.weight === null ||
+    accountData.height === null ||
+    accountData.yearOfBirth === null
+  ) {
+    return "אנא עדכן את כל הנתונים האישיים שלך קודם";
+  }
+
+  const age = LocalDate.now().year() - accountData.yearOfBirth;
+
+  // for men: 10W + 6.25H - 5A + 5
+  let calories: number;
+  if (accountData.gender === "גבר") {
+    calories = Math.round(
+      10 * accountData.weight + 6.25 * accountData.height - 5 * age + 5
+    );
+  } else {
+    // for women: 10W + 6.25H - 5A - 161
+    calories = Math.round(
+      10 * accountData.weight + 6.25 * accountData.height - 5 * age - 161
+    );
+  }
+
+  return `צריכת הקלוריות היומית שלך היא: ${Math.round(calories * 1.2)}`;
 }

@@ -39,14 +39,6 @@ router.post("/", async (req, res) => {
     to: body.WaId,
   });
   res.type("text/xml").send(twiml.toString());
-
-  //   twilioClient.messages
-  //     .create({
-  //       from: "whatsapp:+14155238886",
-  //       body: "Hello to you!!!",
-  //       to: body.From,
-  //     })
-  //     .then((message) => console.log("message id", message.sid));
 });
 
 async function main() {

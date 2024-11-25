@@ -1,0 +1,3 @@
+ALTER TABLE account ADD COLUMN "weight" INTEGER;
+ALTER TABLE account ADD COLUMN "height" INTEGER;
+ALTER TABLE account ADD COLUMN "year_of_birth" INTEGER;
