@@ -7,4 +7,5 @@ export const appConfig = {
   TWILIO_SENDER_NUMBER: process.env.TWILIO_SENDER_NUMBER ?? "",
   OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
   NODE_ENV: process.env.NODE_ENV ?? "development",
+  PORT: process.env.PORT ?? "3000",
 };

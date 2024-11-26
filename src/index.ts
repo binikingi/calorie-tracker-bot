@@ -6,6 +6,7 @@ import { handleIncomingMessage } from "./messages/messages.controller";
 import MessagingResponse from "twilio/lib/twiml/MessagingResponse";
 import { client } from "./db";
 import { logMessage } from "./messagesLog/messagesLog.controller";
+import { appConfig } from "./appConfig";
 
 const app = express();
 const router = Router();
@@ -44,8 +45,8 @@ router.post("/", async (req, res) => {
 async function main() {
   await connectDb();
   await migrateDb();
-  app.listen(3000, () => {
-    console.log("Server is running on port 3000");
+  app.listen(parseInt(appConfig.PORT), () => {
+    console.log("Server is running on port " + appConfig.PORT);
   });
 }
 
