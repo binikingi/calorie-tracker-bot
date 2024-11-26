@@ -27,6 +27,8 @@ jobs:
               git reset --hard origin/main &&
               git pull origin main &&
               pnpm i &&
+              cd client &&
+              pnpm i &&
               pnpm build-prod &&
               pm2 stop ./dist/index.js &&
               pm2 start ./dist/index.js
