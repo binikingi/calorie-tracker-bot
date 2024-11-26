@@ -42,6 +42,10 @@ router.post("/", async (req, res) => {
   res.type("text/xml").send(twiml.toString());
 });
 
+router.get("/", (_, res) => {
+  res.send("Welcome To EatBot!");
+});
+
 async function main() {
   await connectDb();
   await migrateDb();
