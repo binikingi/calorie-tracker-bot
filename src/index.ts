@@ -7,6 +7,7 @@ import MessagingResponse from "twilio/lib/twiml/MessagingResponse";
 import { client } from "./db";
 import { logMessage } from "./messagesLog/messagesLog.controller";
 import { appConfig } from "./appConfig";
+import path from "path";
 
 const app = express();
 const router = Router();
@@ -42,9 +43,9 @@ router.post("/", async (req, res) => {
   res.type("text/xml").send(twiml.toString());
 });
 
-router.get("/", (_, res) => {
-  res.send("Welcome To EatBot!");
-});
+if (appConfig.NODE_ENV === "production") {
+  router.get("*", express.static(path.join(__dirname, "public")));
+}
 
 async function main() {
   await connectDb();

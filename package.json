@@ -7,7 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "build-prod": "pnpm build && pnpm build-client",
+    "build-client": "cd client && pnpm build",
+    "start": "node dist/index.js",
+    "dev-client": "cd client && pnpm dev"
   },
   "keywords": [],
   "author": "",
