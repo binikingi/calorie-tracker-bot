@@ -75,7 +75,11 @@ if (appConfig.NODE_ENV === "production") {
             if (/(.ico|.js|.css|.jpg|.png|.map)$/i.test(req.path)) {
                 next();
             } else {
-                const filePath = path.resolve(__dirname, "build", "index.html");
+                const filePath = path.resolve(
+                    __dirname,
+                    "public",
+                    "index.html"
+                );
                 fs.readFile(
                     filePath,
                     "utf8",
