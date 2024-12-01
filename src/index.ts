@@ -8,6 +8,12 @@ import { client } from "./db";
 import { logMessage } from "./messagesLog/messagesLog.controller";
 import { appConfig } from "./appConfig";
 import path from "path";
+import {
+    handleCodeVerification,
+    handleLogin,
+    handleLogout,
+} from "./auth/auth.contoller";
+import { apiRouter } from "./api.routes";
 
 const app = express();
 const router = Router();
@@ -19,40 +25,54 @@ app.use(express.json());
 app.use(router);
 
 router.get("/health", (_, res) => {
-  res.json({ status: "ok" });
+    res.json({ status: "ok" });
 });
 
 router.post("/", async (req, res) => {
-  const body = req.body as Message;
-  console.log("message", body.Body);
-  await logMessage(client, {
-    body: body.Body,
-    direction: "IN",
-    from: body.WaId,
-    to: "SYSTEM",
-  });
-  const response = await handleIncomingMessage(client, body);
-  const twiml = new MessagingResponse();
-  twiml.message(response);
-  await logMessage(client, {
-    body: response,
-    direction: "OUT",
-    from: "SYSTEM",
-    to: body.WaId,
-  });
-  res.type("text/xml").send(twiml.toString());
+    const body = req.body as Message;
+    console.log("message", body.Body);
+    await logMessage(client, {
+        body: body.Body,
+        direction: "IN",
+        from: body.WaId,
+        to: "SYSTEM",
+    });
+    const response = await handleIncomingMessage(client, body);
+    const twiml = new MessagingResponse();
+    twiml.message(response);
+    await logMessage(client, {
+        body: response,
+        direction: "OUT",
+        from: "SYSTEM",
+        to: body.WaId,
+    });
+    res.type("text/xml").send(twiml.toString());
 });
 
+router.post("/login", async (req, res) => {
+    await handleLogin(client, req, res);
+});
+
+router.post("/login/verify", async (req, res) => {
+    await handleCodeVerification(client, req, res);
+});
+
+router.post("/logout", async (req, res) => {
+    await handleLogout(client, req, res);
+});
+
+router.use(apiRouter);
+
 if (appConfig.NODE_ENV === "production") {
-  router.get("*", express.static(path.join(__dirname, "public")));
+    router.get("*", express.static(path.join(__dirname, "public")));
 }
 
 async function main() {
-  await connectDb();
-  await migrateDb();
-  app.listen(parseInt(appConfig.PORT), () => {
-    console.log("Server is running on port " + appConfig.PORT);
-  });
+    await connectDb();
+    await migrateDb();
+    app.listen(parseInt(appConfig.PORT), () => {
+        console.log("Server is running on port " + appConfig.PORT);
+    });
 }
 
 main().catch((error) => console.error(error));

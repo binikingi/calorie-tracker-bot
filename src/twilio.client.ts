@@ -1,5 +1,7 @@
 import twilio from "twilio";
+import { appConfig } from "./appConfig";
 
-const accountSid = "AC2864339b20aba4a380603ac7ae2a8d43";
-const authToken = "e701bd18a392a85558e52213688286b8";
-export const twilioClient = twilio(accountSid, authToken);
+export const twilioClient = twilio(
+    appConfig.TWILIO_ACCOUNT_SID,
+    appConfig.TWILIO_ACCOUNT_TOKEN
+);
