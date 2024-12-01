@@ -14,6 +14,8 @@ import {
     handleLogout,
 } from "./auth/auth.contoller";
 import { apiRouter } from "./api.routes";
+import fs from "fs";
+import ErrnoException = NodeJS.ErrnoException;
 
 const app = express();
 const router = Router();
@@ -64,6 +66,33 @@ router.post("/logout", async (req, res) => {
 router.use(apiRouter);
 
 if (appConfig.NODE_ENV === "production") {
+    app.use(
+        (
+            req: express.Request,
+            res: express.Response,
+            next: express.NextFunction
+        ) => {
+            if (/(.ico|.js|.css|.jpg|.png|.map)$/i.test(req.path)) {
+                next();
+            } else {
+                const filePath = path.resolve(__dirname, "build", "index.html");
+                fs.readFile(
+                    filePath,
+                    "utf8",
+                    (err: ErrnoException | null, data: string) => {
+                        res.header(
+                            "Cache-Control",
+                            "private, no-cache, no-store, must-revalidate"
+                        );
+                        res.header("Expires", "-1");
+                        res.header("Pragma", "no-cache");
+                        res.send(data);
+                    }
+                );
+            }
+        }
+    );
+
     router.get("*", express.static(path.join(__dirname, "public")));
 }
 
