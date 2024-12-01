@@ -8,8 +8,8 @@ import { getAccountDataByWhatsappNumber } from "../account/account.controller";
 import { sql } from "@ts-safeql/sql-tag";
 import { convert, LocalDateTime } from "@js-joda/core";
 import crypto from "crypto";
-import { twilioClient } from "../twilio.client";
-import { appConfig } from "../appConfig";
+// import { twilioClient } from "../twilio.client";
+// import { appConfig } from "../appConfig";
 
 export async function handleLogin(
     client: Client,
@@ -39,12 +39,13 @@ export async function handleLogin(
         code = await generateLoginCodeForAccount(client, accountData.accountId);
     }
 
-    await twilioClient.messages.create({
-        to: `whatsapp:+${whatsappNumber}`,
-        from: appConfig.TWILIO_SENDER_NUMBER,
-        contentSid: "HX3137aadc80ea83ace46a088f9f38fb28",
-        contentVariables: JSON.stringify({ 1: code }),
-    });
+    // TODO bring back once whatsapp approve the template
+    // await twilioClient.messages.create({
+    //     to: `whatsapp:+${whatsappNumber}`,
+    //     from: appConfig.TWILIO_SENDER_NUMBER,
+    //     contentSid: "HX3137aadc80ea83ace46a088f9f38fb28",
+    //     contentVariables: JSON.stringify({ 1: code }),
+    // });
 
     return res.status(200).json({ code });
 }
