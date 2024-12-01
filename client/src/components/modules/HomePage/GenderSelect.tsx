@@ -6,28 +6,17 @@ import { useUpdateAccountDetailsMutation } from "../../../hooks/useUpdateAccount
 import { NativeSelectRoot } from "../../ui/native-select";
 import { Field } from "../../ui/field";
 
-export const GenderSelect = () => {
-    const query = useQuery(getAccountDetailsQueryOptions);
-    const updateAccountMutation = useUpdateAccountDetailsMutation();
-    if (query.isLoading || query.isPending) {
-        return <Text>טוען מידע</Text>;
-    }
-    if (query.isError) {
-        return <Text>{fetchErrorMessage(query.error)}</Text>;
-    }
-
+export const GenderSelect = (props: {
+    gender: string | null;
+    onChange: (gender: string) => void;
+}) => {
     return (
         <Field label="מין">
             <NativeSelectRoot>
                 <NativeSelectField
-                    onChange={(e) =>
-                        updateAccountMutation.mutate(
-                            { gender: e.currentTarget.value },
-                            { onSuccess: () => query.refetch() }
-                        )
-                    }
+                    onChange={(e) => props.onChange(e.currentTarget.value)}
                     placeholder="מין"
-                    value={query.data.data.gender ?? undefined}
+                    value={props.gender ?? undefined}
                 >
                     <option value="גבר">גבר</option>
                     <option value="אישה">אישה</option>
