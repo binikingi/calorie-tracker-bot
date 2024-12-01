@@ -31,6 +31,7 @@ jobs:
                       pnpm i &&
                       cd ../ &&
                       pm2 stop ./dist/index.js &&
+                      rm -rf dist &&
                       pnpm build-prod &&
                       pm2 start ./dist/index.js
                       '
