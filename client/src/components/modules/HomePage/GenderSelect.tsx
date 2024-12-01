@@ -1,10 +1,6 @@
-import { NativeSelectField, Text } from "@chakra-ui/react";
-import { useQuery } from "@tanstack/react-query";
-import { getAccountDetailsQueryOptions } from "../../../queries/api.queries";
-import { fetchErrorMessage } from "../../../api";
-import { useUpdateAccountDetailsMutation } from "../../../hooks/useUpdateAccountDetailsMutation";
-import { NativeSelectRoot } from "../../ui/native-select";
+import { NativeSelectField } from "@chakra-ui/react";
 import { Field } from "../../ui/field";
+import { NativeSelectRoot } from "../../ui/native-select";
 
 export const GenderSelect = (props: {
     gender: string | null;

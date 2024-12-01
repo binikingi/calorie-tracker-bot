@@ -1,6 +1,5 @@
 import { Badge, Input, Text } from "@chakra-ui/react";
 import { Field } from "../../ui/field";
-import { InputGroup } from "../../ui/input-group";
 
 export const WeightInput = (props: {
     weight: number | null;

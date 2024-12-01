@@ -1,15 +1,15 @@
 import { Bleed, Box, Button, Flex, Separator } from "@chakra-ui/react";
-import { AgeInput } from "./YearOfBirthInput";
-import { GenderSelect } from "./GenderSelect";
-import { WeightInput } from "./WeightInput";
-import { HeightInput } from "./HeightInput";
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
+import { useUpdateAccountDetailsMutation } from "../../../hooks/useUpdateAccountDetailsMutation";
+import { getAccountDetailsQueryOptions } from "../../../queries/api.queries";
 import { CalorieIntake } from "./CalorieIntake";
 import { DailyTrack } from "./DailyTrack";
+import { GenderSelect } from "./GenderSelect";
+import { HeightInput } from "./HeightInput";
 import { WeeklyCalorieTrack } from "./WeeklyCalorieTrack";
-import { getAccountDetailsQueryOptions } from "../../../queries/api.queries";
-import { useUpdateAccountDetailsMutation } from "../../../hooks/useUpdateAccountDetailsMutation";
-import { infiniteQueryOptions, useQuery } from "@tanstack/react-query";
-import React from "react";
+import { WeightInput } from "./WeightInput";
+import { AgeInput } from "./YearOfBirthInput";
 
 export const UserDetailsSection = () => {
     const { isSuccess, data, refetch } = useQuery({
