@@ -30,7 +30,7 @@ jobs:
                       cd client &&
                       pnpm i &&
                       cd ../ &&
-                      pnpm build-prod &&
                       pm2 stop ./dist/index.js &&
+                      pnpm build-prod &&
                       pm2 start ./dist/index.js
                       '
