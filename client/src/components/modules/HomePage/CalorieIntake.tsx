@@ -9,8 +9,6 @@ export const CalorieIntake = () => {
         <Flex w={"full"} justify={"center"} p={4} gap={2} align={"center"}>
             <Heading display={"flex"} alignItems={"center"} gap={2}>
                 צריכת קלוריות מומלצת:
-            </Heading>
-            <Heading>
                 {isSuccess ? (
                     (data.data.calorieIntake ?? "יש למלא את הפרטים למעלה")
                 ) : (
