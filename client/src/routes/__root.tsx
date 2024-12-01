@@ -12,7 +12,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         return (
             <Page>
                 <Outlet />
-                <TanStackRouterDevtools />
+                {import.meta.env.DEV && <TanStackRouterDevtools />}
             </Page>
         );
     },
