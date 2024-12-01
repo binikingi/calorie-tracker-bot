@@ -11,7 +11,7 @@ export const AgeInput = (props: {
                 type="number"
                 min={1900}
                 max={new Date().getFullYear()}
-                value={props.yearOfBirth ?? undefined}
+                value={props.yearOfBirth ?? ""}
                 onChange={(e) => {
                     const year = parseInt(e.currentTarget.value);
                     if (isNaN(year)) {

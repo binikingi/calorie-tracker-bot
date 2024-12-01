@@ -12,7 +12,7 @@ export const GenderSelect = (props: {
                 <NativeSelectField
                     onChange={(e) => props.onChange(e.currentTarget.value)}
                     placeholder="מין"
-                    value={props.gender ?? undefined}
+                    value={props.gender ?? ""}
                 >
                     <option value="גבר">גבר</option>
                     <option value="אישה">אישה</option>

@@ -16,7 +16,7 @@ export const WeightInput = (props: {
             <Input
                 type="number"
                 min={0}
-                value={props.weight ?? undefined}
+                value={props.weight ?? ""}
                 onChange={(e) => {
                     const weight = parseInt(e.currentTarget.value);
                     if (isNaN(weight)) {

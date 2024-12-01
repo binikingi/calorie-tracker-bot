@@ -16,7 +16,7 @@ export const HeightInput = (props: {
             <Input
                 type="number"
                 min={0}
-                value={props.height ?? undefined}
+                value={props.height ?? ""}
                 onChange={(e) => {
                     const height = parseInt(e.currentTarget.value);
                     if (isNaN(height)) {

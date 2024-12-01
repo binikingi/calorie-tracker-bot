@@ -1,5 +1,5 @@
 import { Button, Flex, Heading, IconButton } from "@chakra-ui/react";
-import { useLocation, useRouter } from "@tanstack/react-router";
+import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import React from "react";
 import { LuArrowRight } from "react-icons/lu";
 import { useAccount } from "./Account/AxccountState";
@@ -9,6 +9,7 @@ import { ColorModeButton, useColorModeValue } from "./components/ui/color-mode";
 export const Page = (props: { children: React.ReactNode }) => {
     const { history } = useRouter();
     const location = useLocation();
+    const navigate = useNavigate();
     const [account, setAccount] = useAccount();
 
     const logOut = async () => {
@@ -31,6 +32,7 @@ export const Page = (props: { children: React.ReactNode }) => {
                 w={"full"}
                 flexDir={"row"}
                 justify={"space-between"}
+                align={"center"}
                 p={4}
             >
                 <Flex gap={2} align={"center"}>
@@ -42,7 +44,9 @@ export const Page = (props: { children: React.ReactNode }) => {
                             <LuArrowRight />
                         </IconButton>
                     )}
-                    <Heading>EatBot</Heading>
+                    <Heading onClick={() => navigate({ to: "/" })}>
+                        EatBot
+                    </Heading>
                 </Flex>
                 <Flex gap={2}>
                     <ColorModeButton />
