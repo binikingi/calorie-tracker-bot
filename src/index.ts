@@ -38,6 +38,7 @@ router.get("/whatsapp", (_, res) => {
 });
 
 router.post("/", async (req, res) => {
+    console.log("got message");
     try {
         if (req.body.NumMedia !== undefined) {
             const numMedia = parseInt(req.body.NumMedia, 10);
