@@ -1,8 +1,11 @@
 import express, { Router } from "express";
 import cors from "cors";
 import { connectDb, migrateDb } from "./migrateDb";
-import { Message } from "./messages/messages.interfaces";
-import { handleIncomingMessage } from "./messages/messages.controller";
+import { MediaMessage, Message } from "./messages/messages.interfaces";
+import {
+    handleIncomingMediaMessage,
+    handleIncomingMessage,
+} from "./messages/messages.controller";
 import MessagingResponse from "twilio/lib/twiml/MessagingResponse";
 import { client } from "./db";
 import { logMessage } from "./messagesLog/messagesLog.controller";
@@ -35,24 +38,51 @@ router.get("/whatsapp", (_, res) => {
 });
 
 router.post("/", async (req, res) => {
-    const body = req.body as Message;
-    console.log("message", body.Body);
-    await logMessage(client, {
-        body: body.Body,
-        direction: "IN",
-        from: body.WaId,
-        to: "SYSTEM",
-    });
-    const response = await handleIncomingMessage(client, body);
-    const twiml = new MessagingResponse();
-    twiml.message(response);
-    await logMessage(client, {
-        body: response,
-        direction: "OUT",
-        from: "SYSTEM",
-        to: body.WaId,
-    });
-    res.type("text/xml").send(twiml.toString());
+    if (req.body.NumMedia !== undefined) {
+        const numMedia = parseInt(req.body.NumMedia, 10);
+        if (!isNaN(numMedia) && numMedia > 0) {
+            const body = req.body as MediaMessage;
+            await logMessage(client, {
+                body: body.Body,
+                direction: "IN",
+                from: body.WaId,
+                to: "SYSTEM",
+                mediaUrl: body.MediaUrl0,
+            });
+            const response = await handleIncomingMediaMessage(client, body);
+            const twiml = new MessagingResponse();
+            twiml.message(response);
+            await logMessage(client, {
+                body: response,
+                direction: "OUT",
+                from: "SYSTEM",
+                to: body.WaId,
+                mediaUrl: body.MediaUrl0,
+            });
+            res.type("text/xml").send(twiml.toString());
+        }
+    } else {
+        const body = req.body as Message;
+        console.log("message", body.Body);
+        await logMessage(client, {
+            body: body.Body,
+            direction: "IN",
+            from: body.WaId,
+            to: "SYSTEM",
+            mediaUrl: null,
+        });
+        const response = await handleIncomingMessage(client, body);
+        const twiml = new MessagingResponse();
+        twiml.message(response);
+        await logMessage(client, {
+            body: response,
+            direction: "OUT",
+            from: "SYSTEM",
+            to: body.WaId,
+            mediaUrl: null,
+        });
+        res.type("text/xml").send(twiml.toString());
+    }
 });
 
 router.post("/login", async (req, res) => {

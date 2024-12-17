@@ -1,0 +1,2 @@
+ALTER TABLE message_log ADD COLUMN media_url TEXT;
+ALTER TABLE message_log ALTER COLUMN body DROP NOT NULL;

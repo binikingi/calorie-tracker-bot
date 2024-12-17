@@ -1,14 +1,60 @@
 import { convert, Instant, LocalDate, ZoneId } from "@js-joda/core";
 import { getFormattedLogMessageByDate } from "../foodLog/foodLog.controller";
-import { Message } from "./messages.interfaces";
+import { MediaMessage, Message } from "./messages.interfaces";
 import "@js-joda/timezone";
-import { getNutritionValues } from "../gpt/gpt.controller";
+import {
+    getNutritionValuesFromImage,
+    getNutritionValuesFromText,
+} from "../gpt/gpt.controller";
 import { Client } from "pg";
 import { sql } from "@ts-safeql/sql-tag";
 import {
     getAccountDataByWhatsappNumber,
     getAccountIdByWhatsappNumber,
 } from "../account/account.controller";
+
+export async function handleIncomingMediaMessage(
+    client: Client,
+    message: MediaMessage
+): Promise<string> {
+    const nutritionValues = await getNutritionValuesFromImage(
+        message.MediaUrl0
+    );
+    const accountId = await getAccountIdByWhatsappNumber(client, message.WaId);
+    if (accountId === null) {
+        return getNotRegisteredMessage();
+    }
+    const nowLocalDate = Instant.now()
+        .atZone(ZoneId.of("Asia/Jerusalem"))
+        .toLocalDate();
+    for (const food of nutritionValues.data) {
+        if (
+            food.calories === null ||
+            food.carbGrams === null ||
+            food.fatGrams === null ||
+            food.proteinGrams === null
+        ) {
+            continue;
+        }
+        await insertFoodLog(client, accountId, {
+            calorie: food.calories,
+            carbGram: food.carbGrams,
+            date: convert(nowLocalDate).toDate(),
+            fatGram: food.fatGrams,
+            foodName: food.name,
+            proteingGram: food.proteinGrams,
+        });
+    }
+    return `הוספתי:
+${nutritionValues.data.map((x) => x.name).join(", ")}
+סיכום יומי:
+${await getFormattedLogMessageByDate(
+    client,
+    message.WaId,
+    nowLocalDate,
+    false
+)}`;
+}
 
 export async function handleIncomingMessage(
     client: Client,
@@ -136,9 +182,10 @@ async function handleDisplayHelp() {
 כך תוכל להשתמש בי:
 
 ☑️ כדי *לתעד מאכל שצרכת*:
- רשום ״*הוסף*״ + מה אכלת וכמה אכלת
+אפשר לצלם תמונה של המנה ואני כבר אעשה את החישובים שצריך או
+רשום ״*הוסף*״ + מה אכלת וכמה אכלת
 לדוגמא:
- ״הוסף 100 גרם אורז לבן״ 
+״הוסף 100 גרם אורז לבן״
 ➖➖➖➖➖➖➖➖➖➖
 🔍 כדי לבדוק *שווי קלוריות*:
 רשום ״*בדוק*״ 
@@ -151,17 +198,17 @@ async function handleDisplayHelp() {
 📅 כדי *לצפות בתאריך אחר*:
 רשום ״*תראה*״ + תאריך
 לדוגמא:
- ״תראה 17.11״
+״תראה 17.11״
 ➖➖➖➖➖➖➖➖➖➖
 🍽️ כדי לראות פירוט של כל *התפריט שאכלת*:
- רשום ״*תפריט*״ או ״*תפריט*״ + תאריך
+רשום ״*תפריט*״ או ״*תפריט*״ + תאריך
 לדוגמה:
- ״תפריט 21.11״
+״תפריט 21.11״
 ➖➖➖➖➖➖➖➖➖➖
 🪪 כדי *לעדכן* משקל/גובה/שנת לידה/מגדר 
 רשום ״משקל״ + המשקל שלך
 לדוגמה:
- ״משקל 62״ או ״גובה 157״ או ״שנת לידה 1990״ או ״מגדר גבר״
+״משקל 62״ או ״גובה 157״ או ״שנת לידה 1990״ או ״מגדר גבר״
 ➖➖➖➖➖➖➖➖➖➖
 ⚖️ כדי לחשב *צריכת קלוריות יומית*:
 רשום ״חשב״
@@ -248,7 +295,7 @@ async function handleLogFood(
     );
 
     if (leftOverFoods.length > 0) {
-        const nutritionValues = await getNutritionValues(
+        const nutritionValues = await getNutritionValuesFromText(
             leftOverFoods.join(", ")
         );
 
@@ -377,7 +424,7 @@ async function handleCheckFoodNutritionValues(
     const leftOverFoods = foods.filter((food) => !foundFoods.includes(food));
 
     if (leftOverFoods.length > 0) {
-        const nutritionValues = await getNutritionValues(
+        const nutritionValues = await getNutritionValuesFromText(
             leftOverFoods.join(", ")
         );
         for (const food of nutritionValues.data) {
