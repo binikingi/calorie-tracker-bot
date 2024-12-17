@@ -20,7 +20,7 @@ export async function getNutritionValuesFromText(
     userMessage: string
 ): Promise<NutritionValues> {
     const response = await openaiClient.chat.completions.create({
-        model: "o1-preview",
+        model: "gpt-4o",
         messages: [
             {
                 role: "system",
