@@ -30,6 +30,10 @@ router.get("/health", (_, res) => {
     res.json({ status: "ok" });
 });
 
+router.get("/whatsapp", (_, res) => {
+    res.redirect("https://wa.me/972533687649?text=הרשמה");
+});
+
 router.post("/", async (req, res) => {
     const body = req.body as Message;
     console.log("message", body.Body);
