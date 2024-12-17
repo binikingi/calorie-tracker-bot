@@ -5,6 +5,9 @@ import tseslint from 'typescript-eslint';
 import safeql from "@ts-safeql/eslint-plugin/config";
 
 export default tseslint.config(
+  {
+    ignores: ["node_modules", "dist", "client"],
+  },
   eslint.configs.recommended,
   tseslint.configs.recommended,
   safeql.configs.connections({
@@ -12,5 +15,5 @@ export default tseslint.config(
     databaseUrl: "postgres://postgres:postgres@localhost:5432/calorie_tracker",
     // Check all of the queries that are used with the `sql` tag:
     targets: [{ wrapper: "client.query" }],
-  }),
+  })
 );
