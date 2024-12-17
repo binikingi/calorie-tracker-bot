@@ -39,6 +39,7 @@ router.get("/whatsapp", (_, res) => {
 
 router.post("/", async (req, res) => {
     console.log("got message");
+    console.log("req.body.NumMedia", req.body.NumMedia);
     try {
         if (
             req.body.NumMedia !== undefined &&
@@ -76,7 +77,6 @@ router.post("/", async (req, res) => {
                 mediaUrl: null,
             });
             const response = await handleIncomingMessage(client, body);
-            console.log("response", response);
             const twiml = new MessagingResponse();
             twiml.message(response);
             await logMessage(client, {
@@ -86,7 +86,6 @@ router.post("/", async (req, res) => {
                 to: body.WaId,
                 mediaUrl: null,
             });
-            console.log("sending response", twiml.toString());
             res.type("text/xml").send(twiml.toString());
         }
     } catch (error) {
