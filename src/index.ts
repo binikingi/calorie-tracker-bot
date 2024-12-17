@@ -38,18 +38,41 @@ router.get("/whatsapp", (_, res) => {
 });
 
 router.post("/", async (req, res) => {
-    if (req.body.NumMedia !== undefined) {
-        const numMedia = parseInt(req.body.NumMedia, 10);
-        if (!isNaN(numMedia) && numMedia > 0) {
-            const body = req.body as MediaMessage;
+    try {
+        if (req.body.NumMedia !== undefined) {
+            const numMedia = parseInt(req.body.NumMedia, 10);
+            if (!isNaN(numMedia) && numMedia > 0) {
+                const body = req.body as MediaMessage;
+                await logMessage(client, {
+                    body: body.Body,
+                    direction: "IN",
+                    from: body.WaId,
+                    to: "SYSTEM",
+                    mediaUrl: body.MediaUrl0,
+                });
+                const response = await handleIncomingMediaMessage(client, body);
+                const twiml = new MessagingResponse();
+                twiml.message(response);
+                await logMessage(client, {
+                    body: response,
+                    direction: "OUT",
+                    from: "SYSTEM",
+                    to: body.WaId,
+                    mediaUrl: body.MediaUrl0,
+                });
+                res.type("text/xml").send(twiml.toString());
+            }
+        } else {
+            const body = req.body as Message;
+            console.log("message", body.Body);
             await logMessage(client, {
                 body: body.Body,
                 direction: "IN",
                 from: body.WaId,
                 to: "SYSTEM",
-                mediaUrl: body.MediaUrl0,
+                mediaUrl: null,
             });
-            const response = await handleIncomingMediaMessage(client, body);
+            const response = await handleIncomingMessage(client, body);
             const twiml = new MessagingResponse();
             twiml.message(response);
             await logMessage(client, {
@@ -57,31 +80,13 @@ router.post("/", async (req, res) => {
                 direction: "OUT",
                 from: "SYSTEM",
                 to: body.WaId,
-                mediaUrl: body.MediaUrl0,
+                mediaUrl: null,
             });
             res.type("text/xml").send(twiml.toString());
         }
-    } else {
-        const body = req.body as Message;
-        console.log("message", body.Body);
-        await logMessage(client, {
-            body: body.Body,
-            direction: "IN",
-            from: body.WaId,
-            to: "SYSTEM",
-            mediaUrl: null,
-        });
-        const response = await handleIncomingMessage(client, body);
-        const twiml = new MessagingResponse();
-        twiml.message(response);
-        await logMessage(client, {
-            body: response,
-            direction: "OUT",
-            from: "SYSTEM",
-            to: body.WaId,
-            mediaUrl: null,
-        });
-        res.type("text/xml").send(twiml.toString());
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Internal server error");
     }
 });
 
