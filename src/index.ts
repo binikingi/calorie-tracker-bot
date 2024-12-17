@@ -40,30 +40,31 @@ router.get("/whatsapp", (_, res) => {
 router.post("/", async (req, res) => {
     console.log("got message");
     try {
-        if (req.body.NumMedia !== undefined) {
+        if (
+            req.body.NumMedia !== undefined &&
+            isNaN(parseInt(req.body.NumMedia, 10)) &&
+            parseInt(req.body.NumMedia, 10) > 0
+        ) {
             console.log("media message", req.body);
-            const numMedia = parseInt(req.body.NumMedia, 10);
-            if (!isNaN(numMedia) && numMedia > 0) {
-                const body = req.body as MediaMessage;
-                await logMessage(client, {
-                    body: body.Body,
-                    direction: "IN",
-                    from: body.WaId,
-                    to: "SYSTEM",
-                    mediaUrl: body.MediaUrl0,
-                });
-                const response = await handleIncomingMediaMessage(client, body);
-                const twiml = new MessagingResponse();
-                twiml.message(response);
-                await logMessage(client, {
-                    body: response,
-                    direction: "OUT",
-                    from: "SYSTEM",
-                    to: body.WaId,
-                    mediaUrl: body.MediaUrl0,
-                });
-                res.type("text/xml").send(twiml.toString());
-            }
+            const body = req.body as MediaMessage;
+            await logMessage(client, {
+                body: body.Body,
+                direction: "IN",
+                from: body.WaId,
+                to: "SYSTEM",
+                mediaUrl: body.MediaUrl0,
+            });
+            const response = await handleIncomingMediaMessage(client, body);
+            const twiml = new MessagingResponse();
+            twiml.message(response);
+            await logMessage(client, {
+                body: response,
+                direction: "OUT",
+                from: "SYSTEM",
+                to: body.WaId,
+                mediaUrl: body.MediaUrl0,
+            });
+            res.type("text/xml").send(twiml.toString());
         } else {
             const body = req.body as Message;
             console.log("message", body.Body);
