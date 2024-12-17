@@ -43,7 +43,7 @@ router.post("/", async (req, res) => {
     try {
         if (
             req.body.NumMedia !== undefined &&
-            isNaN(parseInt(req.body.NumMedia, 10)) &&
+            !isNaN(parseInt(req.body.NumMedia, 10)) &&
             parseInt(req.body.NumMedia, 10) > 0
         ) {
             console.log("media message", req.body);
