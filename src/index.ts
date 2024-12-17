@@ -41,6 +41,7 @@ router.post("/", async (req, res) => {
     console.log("got message");
     try {
         if (req.body.NumMedia !== undefined) {
+            console.log("media message", req.body);
             const numMedia = parseInt(req.body.NumMedia, 10);
             if (!isNaN(numMedia) && numMedia > 0) {
                 const body = req.body as MediaMessage;
@@ -74,6 +75,7 @@ router.post("/", async (req, res) => {
                 mediaUrl: null,
             });
             const response = await handleIncomingMessage(client, body);
+            console.log("response", response);
             const twiml = new MessagingResponse();
             twiml.message(response);
             await logMessage(client, {
@@ -83,6 +85,7 @@ router.post("/", async (req, res) => {
                 to: body.WaId,
                 mediaUrl: null,
             });
+            console.log("sending response", twiml.toString());
             res.type("text/xml").send(twiml.toString());
         }
     } catch (error) {
