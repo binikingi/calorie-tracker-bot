@@ -7,11 +7,11 @@ export const GenderSelect = (props: {
     onChange: (gender: string) => void;
 }) => {
     return (
-        <Field label="מין">
+        <Field label="מגדר">
             <NativeSelectRoot>
                 <NativeSelectField
                     onChange={(e) => props.onChange(e.currentTarget.value)}
-                    placeholder="מין"
+                    placeholder="מגדר"
                     value={props.gender ?? ""}
                 >
                     <option value="גבר">גבר</option>

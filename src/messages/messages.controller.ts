@@ -51,10 +51,10 @@ export async function handleIncomingMessage(
         message.Body === "משקל" ||
         message.Body === "גובה" ||
         message.Body === "שנת לידה" ||
-        message.Body === "מין" ||
+        message.Body === "מגדר" ||
         message.Body.startsWith("משקל ") ||
         message.Body.startsWith("גובה ") ||
-        message.Body.startsWith("מין ") ||
+        message.Body.startsWith("מגדר ") ||
         message.Body.startsWith("שנת לידה ")
     ) {
         return await handleAccountMeasures(client, message);
@@ -139,30 +139,30 @@ async function handleDisplayHelp() {
  רשום ״*הוסף*״ + מה אכלת וכמה אכלת
 לדוגמא:
  ״הוסף 100 גרם אורז לבן״ 
-➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
+➖➖➖➖➖➖➖➖➖➖
 🔍 כדי לבדוק *שווי קלוריות*:
 רשום ״*בדוק*״ 
 לדוגמא: 
 ״בדוק 100 גרם אורז לבן״
-➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
+➖➖➖➖➖➖➖➖➖➖
 📄 כדי *להציג סיכום יומי*: 
 רשום ״*תראה*״ או ״!״
-➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
+➖➖➖➖➖➖➖➖➖➖
 📅 כדי *לצפות בתאריך אחר*:
 רשום ״*תראה*״ + תאריך
 לדוגמא:
  ״תראה 17.11״
-➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
+➖➖➖➖➖➖➖➖➖➖
 🍽️ כדי לראות פירוט של כל *התפריט שאכלת*:
  רשום ״*תפריט*״ או ״*תפריט*״ + תאריך
 לדוגמה:
  ״תפריט 21.11״
-➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
+➖➖➖➖➖➖➖➖➖➖
 🪪 כדי *לעדכן* משקל/גובה/שנת לידה/מגדר 
 רשום ״משקל״ + המשקל שלך
 לדוגמה:
  ״משקל 62״ או ״גובה 157״ או ״שנת לידה 1990״ או ״מגדר גבר״
-➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
+➖➖➖➖➖➖➖➖➖➖
 ⚖️ כדי לחשב *צריכת קלוריות יומית*:
 רשום ״חשב״
 
@@ -171,7 +171,7 @@ async function handleDisplayHelp() {
 * לשמור על המשקל הקיים - יש לצרוך *בדיוק* את המספר שקיבלת
 * אם המטרה לעלות במשקל - יש לצרוך *יותר*
 * אם המטרה לרדת במשקל - יש לצרוך *פחות*
-➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖
+➖➖➖➖➖➖➖➖➖➖
 🌐 כדי לצפות בכל התהליך שלך: eatbot.binib.co
 ❓בכל שלב ניתן להקיש ״?״ לכדי לצפות בדף זה.
 `;
@@ -429,7 +429,7 @@ const accountMeasuresMap: Record<
     משקל: "weight",
     גובה: "height",
     "שנת לידה": "yearOfBirth",
-    מין: "gender",
+    מגדר: "gender",
 };
 
 async function handleAccountMeasures(client: Client, message: Message) {
@@ -437,7 +437,7 @@ async function handleAccountMeasures(client: Client, message: Message) {
         message.Body === "גובה" ||
         message.Body === "משקל" ||
         message.Body === "שנת לידה" ||
-        message.Body === "מין"
+        message.Body === "מגדר"
     ) {
         const accountData = await getAccountDataByWhatsappNumber(
             client,
@@ -451,17 +451,17 @@ async function handleAccountMeasures(client: Client, message: Message) {
         return `ה${message.Body} המעודכן הוא: ${measure}`;
     }
 
-    if (message.Body.startsWith("מין ")) {
+    if (message.Body.startsWith("מגדר ")) {
         const newGender = message.Body.split(" ")[1].trim();
         if (newGender !== "גבר" && newGender !== "אישה") {
-            return "המין צריך להיות גבר או אישה";
+            return "מגדר צריך להיות גבר או אישה";
         }
         await client.query(sql`
       UPDATE account
       SET gender = ${newGender}
       WHERE whatsapp_number = ${message.WaId}
     `);
-        return "המין עודכן בהצלחה";
+        return "המגדר עודכן בהצלחה";
     }
 
     if (message.Body.startsWith("משקל ")) {
@@ -535,7 +535,12 @@ async function handleCalculateDailyCalories(
         accountData.height === null ||
         accountData.yearOfBirth === null
     ) {
-        return "אנא עדכן את כל הנתונים האישיים שלך קודם";
+        return `אנא עדכן את כל הנתונים האישיים שלך קודם.
+
+🪪 כדי *לעדכן* משקל/גובה/שנת לידה/מגדר 
+רשום ״משקל״ + המשקל שלך
+לדוגמה:
+ ״משקל 62״ או ״גובה 157״ או ״שנת לידה 1990״ או ״מגדר גבר״`;
     }
 
     const age = LocalDate.now().year() - accountData.yearOfBirth;
