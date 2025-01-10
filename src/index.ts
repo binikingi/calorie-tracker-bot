@@ -141,6 +141,8 @@ if (appConfig.NODE_ENV === "production") {
     );
 
     router.get("*", express.static(path.join(__dirname, "public")));
+
+    console.log("config", JSON.stringify(appConfig, null, 2));
 }
 
 async function main() {
