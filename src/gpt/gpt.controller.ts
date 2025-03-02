@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { openaiClient } from "./openaiClient";
 import zodToJsonSchema from "zod-to-json-schema";
+import axios from "axios";
 
 const nutritionValuesSchema = z.object({
     data: z.array(
@@ -65,12 +66,12 @@ export async function getNutritionValuesFromImage(
                 content: [
                     {
                         type: "text",
-                        text: `תחזיר לי את כל המרכיבים שיש בארוחה הזאת עם פירוט של חלבונים, שומנים, פחמימות וקלוריות לכל מרכיב. התמונה נמצאת בקישור הבא. תחזיר את כל השמות של המרכיבים בעברית. תנסה להיות כמה שיותר מדויק בחישוב`,
+                        text: `תחזיר לי את כל המרכיבים שיש בארוחה הזאת עם פירוט של חלבונים, שומנים, פחמימות וקלוריות לכל מרכיב. התמונה נמצאת בקישור הבא. תחזיר את כל השמות של המרכיבים בעברית. תנסה להיות כמה שיותר מדויק בחישוב. אם יש פעמיים משהו תחשב אותו לפי מספר הפעמים שהוא בתמונה`,
                     },
                     {
                         type: "image_url",
                         image_url: {
-                            url: imageUrl,
+                            url: await getBase64FromUrl(imageUrl),
                         },
                     },
                 ],
@@ -91,4 +92,10 @@ export async function getNutritionValuesFromImage(
     ) as NutritionValues;
     console.log("chatgpt response", JSON.stringify(res, null, 2));
     return res;
+}
+
+async function getBase64FromUrl(url: string) {
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+    const base64 = Buffer.from(response.data, "binary").toString("base64");
+    return `data:${response.headers["content-type"]};base64,${base64}`;
 }
