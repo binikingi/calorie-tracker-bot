@@ -118,7 +118,7 @@ router.post("/ollama", async (req, res) => {
     const schema = zodToJsonSchema(LocalLLMReturnType);
     console.log(JSON.stringify(schema, null, 2));
     const response = await ollama.chat({
-        model: "llama3.1",
+        model: "llama3.1:70b",
         format: schema,
         messages: [
             {
