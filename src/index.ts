@@ -112,13 +112,15 @@ router.post("/logout", async (req, res) => {
 const LocalLLMReturnType = z.object({
     list: z.array(z.string()),
 });
-router.post("/ollama", async (req, res) => {
+router.post("/ollama/:model", async (req, res) => {
     console.log("request ollama", req.body);
+    const model = req.params.model;
+    console.log();
     console.time("ollama");
     const schema = zodToJsonSchema(LocalLLMReturnType);
     console.log(JSON.stringify(schema, null, 2));
     const response = await ollama.chat({
-        model: "llama3.1",
+        model: model,
         format: schema,
         messages: [
             {
