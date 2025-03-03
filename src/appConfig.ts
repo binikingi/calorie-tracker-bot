@@ -9,4 +9,5 @@ export const appConfig = {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
     NODE_ENV: process.env.NODE_ENV ?? "development",
     PORT: process.env.PORT ?? "3000",
+    OLLAMA_HOST: process.env.OLLAMA_HOST ?? "http://localhost:11434",
 };

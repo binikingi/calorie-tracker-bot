@@ -19,6 +19,9 @@ import {
 import { apiRouter } from "./api.routes";
 import fs from "fs";
 import ErrnoException = NodeJS.ErrnoException;
+import { z } from "zod";
+import zodToJsonSchema from "zod-to-json-schema";
+import { ollama } from "./Ollama";
 
 const app = express();
 const router = Router();
@@ -104,6 +107,32 @@ router.post("/login/verify", async (req, res) => {
 
 router.post("/logout", async (req, res) => {
     await handleLogout(client, req, res);
+});
+
+const LocalLLMReturnType = z.object({
+    list: z.array(z.string()),
+});
+router.post("/ollama", async (req, res) => {
+    console.log("request ollama", req.body);
+    console.time("ollama");
+    const schema = zodToJsonSchema(LocalLLMReturnType);
+    console.log(JSON.stringify(schema, null, 2));
+    const response = await ollama.chat({
+        model: "llama3.1",
+        format: schema,
+        messages: [
+            {
+                role: "user",
+                content:
+                    req.body.question ??
+                    "Please return the sentence: You typed nothing!",
+            },
+        ],
+    });
+    console.timeEnd("ollama");
+    const parsed = JSON.parse(response.message.content);
+    console.log(parsed);
+    res.json({ response: parsed });
 });
 
 router.use(apiRouter);
