@@ -29,6 +29,9 @@ importers:
       express:
         specifier: ^4.21.1
         version: 4.21.1
+      ollama:
+        specifier: ^0.5.14
+        version: 0.5.14
       openai:
         specifier: 4.86.1
         version: 4.86.1(encoding@0.1.13)(zod@3.23.8)
@@ -1759,6 +1762,9 @@ packages:
   obuf@1.1.2:
     resolution: {integrity: sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==}
 
+  ollama@0.5.14:
+    resolution: {integrity: sha512-pvOuEYa2WkkAumxzJP0RdEYHkbZ64AYyyUszXVX7ruLvk5L+EiO2G71da2GqEQ4IAk4j6eLoUbGk5arzFT1wJA==}
+
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
     engines: {node: '>= 0.8'}
@@ -2310,6 +2316,9 @@ packages:
 
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
+
+  whatwg-fetch@3.6.20:
+    resolution: {integrity: sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg==}
 
   whatwg-url@5.0.0:
     resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
@@ -4017,6 +4026,10 @@ snapshots:
 
   obuf@1.1.2: {}
 
+  ollama@0.5.14:
+    dependencies:
+      whatwg-fetch: 3.6.20
+
   on-finished@2.4.1:
     dependencies:
       ee-first: 1.1.1
@@ -4546,6 +4559,8 @@ snapshots:
   web-streams-polyfill@4.0.0-beta.3: {}
 
   webidl-conversions@3.0.1: {}
+
+  whatwg-fetch@3.6.20: {}
 
   whatwg-url@5.0.0:
     dependencies:
