@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for eat-bot-ollama on 2025-03-03T21:38:07+02:00
+# fly.toml app configuration file generated for eat-bot-ollama on 2025-03-03T23:57:37+02:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
 app = 'eat-bot-ollama'
-primary_region = 'iad'
+primary_region = 'ord'
 
 [build]
   image = 'ollama/ollama'
@@ -12,7 +12,7 @@ primary_region = 'iad'
 [[mounts]]
   source = 'models'
   destination = '/root/.ollama'
-  initial_size = '100gb'
+  initial_size = '10gb'
 
 [http_service]
   internal_port = 11434
@@ -22,4 +22,4 @@ primary_region = 'iad'
   processes = ['app']
 
 [[vm]]
-  size = 'a100-80gb'
+  size = 'a10'
