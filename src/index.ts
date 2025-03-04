@@ -115,26 +115,28 @@ const LocalLLMReturnType = z.object({
 router.post("/ollama/:model", async (req, res) => {
     console.log("request ollama", req.body);
     const model = req.params.model;
+    const imageUrl = req.body.imageUrl;
     console.log();
     console.time("ollama");
     const schema = zodToJsonSchema(LocalLLMReturnType);
     console.log(JSON.stringify(schema, null, 2));
     const response = await ollama.chat({
         model: model,
-        format: schema,
+        // format: schema,
         messages: [
             {
                 role: "user",
                 content:
                     req.body.question ??
                     "Please return the sentence: You typed nothing!",
+                images: [await getFileBufferFromUrl(imageUrl)],
             },
         ],
     });
     console.timeEnd("ollama");
-    const parsed = JSON.parse(response.message.content);
-    console.log(parsed);
-    res.json({ response: parsed });
+    // const parsed = JSON.parse(response.message.content);
+    // console.log(parsed);
+    res.json(response.message.content);
 });
 
 router.use(apiRouter);
@@ -185,3 +187,14 @@ async function main() {
 }
 
 main().catch((error) => console.error(error));
+
+async function getFileBufferFromUrl(
+    imageUrl: string
+): Promise<Uint8Array<ArrayBufferLike>> {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    return uint8Array; // Wrap in an array if you need Uint8Array[]
+}
