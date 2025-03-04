@@ -112,23 +112,34 @@ router.post("/logout", async (req, res) => {
 const LocalLLMReturnType = z.object({
     list: z.array(z.string()),
 });
+
+const GetItemsFromImageReturnType = z.object({
+    data: z.array(
+        z.object({
+            name: z.string(),
+            fatGrams: z.number().nullable(),
+            proteinGrams: z.number().nullable(),
+            carbGrams: z.number().nullable(),
+            calories: z.number().nullable(),
+        })
+    ),
+});
+
 router.post("/ollama/:model", async (req, res) => {
     console.log("request ollama", req.body);
     const model = req.params.model;
     const imageUrl = req.body.imageUrl;
     console.log();
     console.time("ollama");
-    const schema = zodToJsonSchema(LocalLLMReturnType);
+    const schema = zodToJsonSchema(GetItemsFromImageReturnType);
     console.log(JSON.stringify(schema, null, 2));
     const response = await ollama.chat({
         model: model,
-        // format: schema,
+        format: schema,
         messages: [
             {
                 role: "user",
-                content:
-                    req.body.question ??
-                    "Please return the sentence: You typed nothing!",
+                content: req.body.question,
                 images: [await getFileBufferFromUrl(imageUrl)],
             },
         ],
