@@ -136,6 +136,9 @@ router.post("/ollama/:model", async (req, res) => {
     const response = await ollama.chat({
         model: model,
         format: schema,
+        options: {
+            temperature: 0.2,
+        },
         messages: [
             {
                 role: "user",
