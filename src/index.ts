@@ -117,10 +117,7 @@ const GetItemsFromImageReturnType = z.object({
     data: z.array(
         z.object({
             name: z.string(),
-            fatGrams: z.number().nullable(),
-            proteinGrams: z.number().nullable(),
-            carbGrams: z.number().nullable(),
-            calories: z.number().nullable(),
+            amount: z.string(),
         })
     ),
 });
