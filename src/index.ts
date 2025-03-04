@@ -145,9 +145,9 @@ router.post("/ollama/:model", async (req, res) => {
         ],
     });
     console.timeEnd("ollama");
-    // const parsed = JSON.parse(response.message.content);
-    // console.log(parsed);
-    res.json(response.message.content);
+    const parsed = JSON.parse(response.message.content);
+    console.log(parsed);
+    res.json(parsed);
 });
 
 router.use(apiRouter);
