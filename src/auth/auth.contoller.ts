@@ -42,7 +42,7 @@ export async function handleLogin(
     await twilioClient.messages.create({
         to: `whatsapp:+${whatsappNumber}`,
         from: appConfig.TWILIO_SENDER_NUMBER,
-        contentSid: "HX3137aadc80ea83ace46a088f9f38fb28",
+        contentSid: "HX058e6dbcab53ac46e81f2d304715abc3",
         contentVariables: JSON.stringify({ 1: code }),
     });
 
