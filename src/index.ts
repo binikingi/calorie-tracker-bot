@@ -89,7 +89,11 @@ router.post("/", async (req, res) => {
                 to: body.WaId,
                 mediaUrl: null,
             });
-            res.type("text/xml").send(twiml.toString());
+            if (process.env.NODE_ENV !== "production") {
+                res.type("text/plain").send(response);
+            } else {
+                res.type("text/xml").send(twiml.toString());
+            }
         }
     } catch (error) {
         console.error(error);
@@ -109,9 +113,9 @@ router.post("/logout", async (req, res) => {
     await handleLogout(client, req, res);
 });
 
-const LocalLLMReturnType = z.object({
-    list: z.array(z.string()),
-});
+// const LocalLLMReturnType = z.object({
+//     list: z.array(z.string()),
+// });
 
 const GetItemsFromImageReturnType = z.object({
     data: z.array(

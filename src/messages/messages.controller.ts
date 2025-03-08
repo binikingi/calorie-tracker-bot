@@ -1,5 +1,8 @@
 import { convert, Instant, LocalDate, ZoneId } from "@js-joda/core";
-import { getFormattedLogMessageByDate } from "../foodLog/foodLog.controller";
+import {
+    getFoodDescriptionText,
+    getFormattedLogMessageByDate,
+} from "../foodLog/foodLog.controller";
 import { MediaMessage, Message } from "./messages.interfaces";
 import "@js-joda/timezone";
 import {
@@ -12,6 +15,8 @@ import {
     getAccountDataByWhatsappNumber,
     getAccountIdByWhatsappNumber,
 } from "../account/account.controller";
+import translatte from "translatte";
+import { checkIfSentenceHasFoodsAndDrinks } from "../Ollama";
 
 export async function handleIncomingMediaMessage(
     client: Client,
@@ -264,7 +269,14 @@ async function handleLogFood(
         // This means the user is not registered
         return "אתה צריך להירשם למערכת קודם, שלח 'הרשמה'";
     }
-    const foods = clearedMessage.split(",").map((food) => food.trim());
+    const translated = await translatte(message.Body, { to: "en" });
+    const hasFoodAndDrinks = await checkIfSentenceHasFoodsAndDrinks(
+        translated.text
+    );
+    if (!hasFoodAndDrinks) {
+        return "לא הצלחתי להבין מה להוסיף לתפריט 😔, ננסה שוב?";
+    }
+    const foodNames = clearedMessage.split(",").map((food) => food.trim());
     const { rows } = await client.query<{
         id: number;
         name: string;
@@ -275,7 +287,7 @@ async function handleLogFood(
     }>(sql`
     SELECT *
     FROM food_dictionary
-    WHERE name = ANY(${foods})
+    WHERE name = ANY(${foodNames})
   `);
 
     for (const row of rows) {
@@ -289,8 +301,14 @@ async function handleLogFood(
         });
     }
 
-    const foundFoods = rows.map((row) => row.name);
-    const leftOverFoods = foods.filter(
+    const addedFoodsIds: number[] = [];
+    const foundFoods: string[] = [];
+    for (const row of rows) {
+        addedFoodsIds.push(row.id);
+        foundFoods.push(row.name);
+    }
+
+    const leftOverFoods = foodNames.filter(
         (food) => !foundFoods.includes(food.trim())
     );
 
@@ -308,8 +326,7 @@ async function handleLogFood(
             ) {
                 continue;
             }
-            foundFoods.push(food.name);
-            await insertFoodDictionary(client, {
+            const newFoodId = await insertFoodDictionary(client, {
                 name: food.name,
                 calorie: food.calories,
                 carbGram: food.carbGrams,
@@ -324,18 +341,31 @@ async function handleLogFood(
                 foodName: food.name,
                 proteingGram: food.proteinGrams,
             });
+            foundFoods.push(food.name);
+            addedFoodsIds.push(newFoodId);
         }
     }
 
-    return `הוספתי:
-${foundFoods.join(", ")}
-סיכום יומי:
-${await getFormattedLogMessageByDate(
-    client,
-    message.WaId,
-    nowLocalDate,
-    false
-)}`;
+    const { rows: allAddedFoods } = await client.query<{
+        id: number;
+        name: string;
+        proteing_gram: number;
+        fat_gram: number;
+        carb_gram: number;
+        calorie: number;
+    }>(sql`
+        SELECT *
+        FROM food_dictionary
+        WHERE id = ANY(${addedFoodsIds})    
+    `);
+
+    if (allAddedFoods.length === 0) {
+        return `לא הצלחתי להבין מה להוסיף לתפריט 😔, ננסה שוב?`;
+    }
+
+    return `הנה מה שהוספתי:\n${allAddedFoods
+        .map(getFoodDescriptionText)
+        .join("\n")}`;
 }
 
 async function insertFoodLog(

@@ -6,3 +6,4 @@
 .env
 Dockerfile
 fly.toml
+tools/**
