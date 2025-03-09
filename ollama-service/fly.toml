@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for eat-bot-ollama on 2025-03-09T00:26:31+02:00
+# fly.toml app configuration file generated for eat-bot-ollama on 2025-03-09T11:09:22+02:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
 app = 'eat-bot-ollama'
-primary_region = 'ord'
+primary_region = 'fra'
 
 [build]
   image = 'ollama/ollama'
@@ -22,5 +22,5 @@ primary_region = 'ord'
   processes = ['app']
 
 [[vm]]
-  size = 'a10'
-  memory = '16gb'
+  size = 'shared-cpu-4x'
+  memory = '4gb'

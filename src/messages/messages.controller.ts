@@ -32,33 +32,36 @@ export async function handleIncomingMediaMessage(
     const nowLocalDate = Instant.now()
         .atZone(ZoneId.of("Asia/Jerusalem"))
         .toLocalDate();
+    const addedFoods: {
+        name: string;
+        proteing_gram: number;
+        fat_gram: number;
+        carb_gram: number;
+        calorie: number;
+    }[] = [];
     for (const food of nutritionValues.data) {
+        const { calories, name, carbGrams, fatGrams, proteinGrams } = food;
         if (
-            food.calories === null ||
-            food.carbGrams === null ||
-            food.fatGrams === null ||
-            food.proteinGrams === null
+            calories === null ||
+            carbGrams === null ||
+            fatGrams === null ||
+            proteinGrams === null
         ) {
             continue;
         }
-        await insertFoodLog(client, accountId, {
-            calorie: food.calories,
-            carbGram: food.carbGrams,
+        const addedFood = await insertFoodLog(client, accountId, {
+            calorie: calories,
+            carbGram: carbGrams,
             date: convert(nowLocalDate).toDate(),
-            fatGram: food.fatGrams,
-            foodName: food.name,
-            proteingGram: food.proteinGrams,
+            fatGram: fatGrams,
+            foodName: name,
+            proteingGram: proteinGrams,
         });
+        addedFoods.push(addedFood);
     }
-    return `הוספתי:
-${nutritionValues.data.map((x) => x.name).join(", ")}
-סיכום יומי:
-${await getFormattedLogMessageByDate(
-    client,
-    message.WaId,
-    nowLocalDate,
-    false
-)}`;
+    return `הנה מה שהוספתי:\n${addedFoods
+        .map(getFoodDescriptionText)
+        .join("\n")}`;
 }
 
 export async function handleIncomingMessage(
@@ -380,7 +383,18 @@ async function insertFoodLog(
         calorie: number;
     }
 ) {
-    await client.query(sql`
+    return (
+        await client.query<{
+            name: string;
+            id: number;
+            account_id: number;
+            food_name: string;
+            date: Date;
+            proteing_gram: number;
+            fat_gram: number;
+            carb_gram: number;
+            calorie: number;
+        }>(sql`
     INSERT INTO account_food_log (
       account_id,
       food_name,
@@ -398,7 +412,9 @@ async function insertFoodLog(
       ${params.carbGram},
       ${params.calorie}
     )
-  `);
+    RETURNING food_name as name,  *
+  `)
+    ).rows[0];
 }
 
 async function insertFoodDictionary(
