@@ -45,8 +45,8 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       twilio:
-        specifier: ^5.3.6
-        version: 5.3.6
+        specifier: ^5.4.5
+        version: 5.4.5
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -2326,8 +2326,8 @@ packages:
     resolution: {integrity: sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==}
     engines: {node: '>=0.6.11 <=0.7.0 || >=0.7.3'}
 
-  twilio@5.3.6:
-    resolution: {integrity: sha512-izHce9sWpiIYyFeZ5pJb5KQeHQ6NDyGuCQ+BOTbBS64ZWq+0InWXvWjZsXbFwGFrhn5MQq0ulouLtYOXiEYY8g==}
+  twilio@5.4.5:
+    resolution: {integrity: sha512-PIteif0CBOrA42SWZiT8IwUuqTNakAFgvXYWsrjEPGaDSczu/GvBs3vUock4S+UguXj7cV4qBswWgXs5ySjGNg==}
     engines: {node: '>=14.0'}
 
   type-check@0.4.0:
@@ -4748,7 +4748,7 @@ snapshots:
 
   tunnel@0.0.6: {}
 
-  twilio@5.3.6:
+  twilio@5.4.5:
     dependencies:
       axios: 1.8.1
       dayjs: 1.11.13

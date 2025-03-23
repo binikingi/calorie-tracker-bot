@@ -17,6 +17,11 @@ import {
 } from "../account/account.controller";
 import translatte from "translatte";
 import { checkIfSentenceHasFoodsAndDrinks } from "../Ollama";
+import { TwilioListPicker } from "twilio/lib/rest/content/v1/content";
+import TwiML from "twilio/lib/twiml/TwiML";
+import { appConfig } from "../appConfig";
+import { twilioClient } from "../twilio.client";
+import axios from "axios";
 
 export async function handleIncomingMediaMessage(
     client: Client,
@@ -77,6 +82,9 @@ export async function handleIncomingMessage(
     }
     if (message.Body.trim() === "?" || message.Body.trim() === "עזרה") {
         return handleDisplayHelp();
+    }
+    if (message.Body.trim().startsWith("מחק")) {
+        return handleDeleteFoodLog(client, message);
     }
     if (
         message.Body === "תראה" ||
@@ -652,4 +660,82 @@ async function handleCalculateDailyCalories(
     }
 
     return `צריכת הקלוריות היומית שלך היא: ${Math.round(calories * 1.2)}`;
+}
+
+async function handleDeleteFoodLog(
+    client: Client,
+    message: Message
+): Promise<string> {
+    const accountData = await getAccountDataByWhatsappNumber(
+        client,
+        message.WaId
+    );
+    if (accountData === null) {
+        return getNotRegisteredMessage();
+    }
+    const nowLocalDate = Instant.now()
+        .atZone(ZoneId.of("Asia/Jerusalem"))
+        .toLocalDate();
+
+    if (message.Body.trim() === "מחק") {
+        const { rows: foodLogs } = await client.query<{
+            id: number;
+            name: string;
+        }>(sql`
+            SELECT account_food_log.id, food_dictionary.name
+            FROM account_food_log
+            JOIN food_dictionary ON account_food_log.food_name = food_dictionary.name
+            WHERE account_food_log.account_id = ${accountData.accountId}
+            AND account_food_log.date = ${convert(nowLocalDate).toDate()}
+            ORDER BY id
+        `);
+
+        const listPicker = new TwilioListPicker();
+        listPicker.button = "תראה לי";
+        listPicker.items = foodLogs.map((log) => ({
+            id: log.id.toString(),
+            item: log.name,
+        }));
+        listPicker.body = "בחרו מהרשימה מה תרצו למחוק מהתפריט של היום";
+        const response = new TwiML();
+
+        await axios.post(
+            "https://content.twilio.com/v1/Content",
+            {
+                friendly_name: "remove_food_log_options",
+                language: "en",
+                variables: {},
+                types: {
+                    "twilio/list-picker": {
+                        body: "בחרו מהרשימה מה תרצו למחוק מהתפריט של היום",
+                        button: "תראה לי",
+                        items: foodLogs.map((log) => ({
+                            id: log.id.toString(),
+                            item: log.name,
+                        })),
+                    },
+                    "twilio/text": {
+                        body: "We have flights to the following destinations: (1) SFO, (2) OAK, (3) LAX. Hurry! Sale ends on {{1}}!",
+                    },
+                },
+            },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                auth: {
+                    username: appConfig.TWILIO_ACCOUNT_SID,
+                    password: appConfig.TWILIO_ACCOUNT_TOKEN,
+                },
+            }
+        );
+
+        await twilioClient.messages.create({
+            to: `whatsapp:+${accountData.whatsappNumber}`,
+            from: appConfig.TWILIO_SENDER_NUMBER,
+            contentSid: "HX2b327581e551f331b83b9fafa6ad4ea7",
+
+            // contentVariables: JSON.stringify({ 1: code }),
+        });
+    }
 }
