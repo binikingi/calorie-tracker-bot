@@ -102,19 +102,6 @@ router.post("/", async (req, res) => {
     }
 });
 
-router.post("/try", async (req, res) => {
-    await twilioClient.messages.create({
-        to: `whatsapp:+${972556620094}`,
-        from: appConfig.TWILIO_SENDER_NUMBER,
-        contentSid: "HXd6f80f657248d21df8f0b37307d01f72",
-        contentVariables: JSON.stringify({
-            item_name_1: "100 גרם אורז",
-            item_id_1: `context=1&id=1`,
-        }),
-    });
-    res.sendStatus(200);
-});
-
 router.post("/login", async (req, res) => {
     await handleLogin(client, req, res);
 });
