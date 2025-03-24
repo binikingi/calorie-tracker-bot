@@ -1,0 +1,1 @@
+ALTER TABLE account_food_log ADD COLUMN removed_at TIMESTAMPTZ;

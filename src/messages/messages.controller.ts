@@ -1,34 +1,49 @@
 import { convert, Instant, LocalDate, ZoneId } from "@js-joda/core";
-import {
-    getFoodDescriptionText,
-    getFormattedLogMessageByDate,
-} from "../foodLog/foodLog.controller";
-import { MediaMessage, Message } from "./messages.interfaces";
 import "@js-joda/timezone";
-import {
-    getNutritionValuesFromImage,
-    getNutritionValuesFromText,
-} from "../gpt/gpt.controller";
-import { Client } from "pg";
 import { sql } from "@ts-safeql/sql-tag";
+import { Client } from "pg";
+import translatte from "translatte";
 import {
     getAccountDataByWhatsappNumber,
     getAccountIdByWhatsappNumber,
 } from "../account/account.controller";
-import translatte from "translatte";
+import {
+    clearAccountActionContext,
+    createAccountActionContext,
+    getAccountActionContext,
+    handleActionContext,
+} from "../actionContext/actionContext.controller";
+import { getContentAndVariablesForFoodLogRemoval } from "../actionContext/handlers/remove.handler";
+import { appConfig } from "../appConfig";
+import {
+    getFoodDescriptionText,
+    getFormattedLogMessageByDate,
+} from "../foodLog/foodLog.controller";
+import {
+    getNutritionValuesFromImage,
+    getNutritionValuesFromText,
+} from "../gpt/gpt.controller";
 import { checkIfSentenceHasFoodsAndDrinks } from "../Ollama";
+import { twilioClient } from "../twilio.client";
+import {
+    MediaMessage,
+    Message,
+    MessageOperationResult,
+} from "./messages.interfaces";
+import { assertNever } from "../assertNever";
 
 export async function handleIncomingMediaMessage(
     client: Client,
     message: MediaMessage
 ): Promise<string> {
-    const nutritionValues = await getNutritionValuesFromImage(
-        message.MediaUrl0
-    );
     const accountId = await getAccountIdByWhatsappNumber(client, message.WaId);
     if (accountId === null) {
         return getNotRegisteredMessage();
     }
+    await clearAccountActionContext(client, accountId);
+    const nutritionValues = await getNutritionValuesFromImage(
+        message.MediaUrl0
+    );
     const nowLocalDate = Instant.now()
         .atZone(ZoneId.of("Asia/Jerusalem"))
         .toLocalDate();
@@ -67,16 +82,52 @@ export async function handleIncomingMediaMessage(
 export async function handleIncomingMessage(
     client: Client,
     message: Message
-): Promise<string> {
+): Promise<MessageOperationResult> {
     if (message.Body === "הרשמה") {
-        return handleRegistration(client, message);
+        return MessageOperationResult.sendText(
+            await handleRegistration(client, message)
+        );
     }
     const accountId = await getAccountIdByWhatsappNumber(client, message.WaId);
     if (accountId === null) {
-        return getNotRegisteredMessage();
+        return MessageOperationResult.sendText(getNotRegisteredMessage());
     }
+
+    const currentActionContext = await getAccountActionContext(
+        client,
+        accountId
+    );
+    if (currentActionContext !== null) {
+        const actionContextResult = await handleActionContext(
+            client,
+            accountId,
+            currentActionContext.id,
+            currentActionContext.context,
+            message.Body
+        );
+        switch (actionContextResult.type) {
+            case "handled":
+                return MessageOperationResult.doNothing();
+            case "nothingToHandle":
+                console.log(
+                    "Nothing to handle currently. Clearing action context"
+                );
+                await clearAccountActionContext(client, accountId);
+                break;
+            case "sendText":
+                return MessageOperationResult.sendText(
+                    actionContextResult.text
+                );
+            default:
+                return assertNever(actionContextResult);
+        }
+    }
+
     if (message.Body.trim() === "?" || message.Body.trim() === "עזרה") {
-        return handleDisplayHelp();
+        return MessageOperationResult.sendText(handleDisplayHelp());
+    }
+    if (message.Body.trim().startsWith("מחק")) {
+        return await handleDeleteFoodLog(client, message);
     }
     if (
         message.Body === "תראה" ||
@@ -86,19 +137,25 @@ export async function handleIncomingMessage(
         message.Body.startsWith("! ") ||
         message.Body.startsWith("תפריט ")
     ) {
-        return handleShowSummaryMessage(
-            client,
-            message,
-            message.Body.startsWith("תפריט")
+        return MessageOperationResult.sendText(
+            await handleShowSummaryMessage(
+                client,
+                message,
+                message.Body.startsWith("תפריט")
+            )
         );
     }
 
     if (message.Body.startsWith("הוסף ")) {
-        return handleLogFood(client, message);
+        return MessageOperationResult.sendText(
+            await handleLogFood(client, message)
+        );
     }
 
     if (message.Body.startsWith("בדוק ")) {
-        return handleCheckFoodNutritionValues(client, message.Body);
+        return MessageOperationResult.sendText(
+            await handleCheckFoodNutritionValues(client, message.Body)
+        );
     }
 
     if (
@@ -111,14 +168,18 @@ export async function handleIncomingMessage(
         message.Body.startsWith("מגדר ") ||
         message.Body.startsWith("שנת לידה ")
     ) {
-        return await handleAccountMeasures(client, message);
+        return MessageOperationResult.sendText(
+            await handleAccountMeasures(client, message)
+        );
     }
 
     if (message.Body === "חשב") {
-        return await handleCalculateDailyCalories(client, message);
+        return MessageOperationResult.sendText(
+            await handleCalculateDailyCalories(client, message)
+        );
     }
 
-    return "אני לא מבין אותך, שלח '?' לעזרה";
+    return MessageOperationResult.sendText("אני לא מבין אותך, שלח '?' לעזרה");
 }
 
 async function handleShowSummaryMessage(
@@ -185,7 +246,7 @@ function getDateFromText(text: string) {
     );
 }
 
-async function handleDisplayHelp() {
+function handleDisplayHelp() {
     const message = `
 כך תוכל להשתמש בי:
 
@@ -394,6 +455,7 @@ async function insertFoodLog(
             fat_gram: number;
             carb_gram: number;
             calorie: number;
+            removed_at: Date | null;
         }>(sql`
     INSERT INTO account_food_log (
       account_id,
@@ -402,7 +464,8 @@ async function insertFoodLog(
       proteing_gram,
       fat_gram,
       carb_gram,
-      calorie
+      calorie,
+      removed_at
     ) VALUES (
       ${accountId},
       ${params.foodName},
@@ -410,7 +473,8 @@ async function insertFoodLog(
       ${params.proteingGram},
       ${params.fatGram},
       ${params.carbGram},
-      ${params.calorie}
+      ${params.calorie},
+      NULL
     )
     RETURNING food_name as name,  *
   `)
@@ -606,7 +670,7 @@ async function handleAccountMeasures(client: Client, message: Message) {
     return "אני לא מבין אותך, שלח '?' לעזרה";
 }
 
-function getNotRegisteredMessage(): string {
+export function getNotRegisteredMessage(): string {
     return `היי, אנחנו לא מכירים 😀. בשביל להתחיל להשתמש בבוט נא לכתוב 'הרשמה'`;
 }
 
@@ -652,4 +716,53 @@ async function handleCalculateDailyCalories(
     }
 
     return `צריכת הקלוריות היומית שלך היא: ${Math.round(calories * 1.2)}`;
+}
+
+async function handleDeleteFoodLog(
+    client: Client,
+    message: Message
+): Promise<MessageOperationResult> {
+    const accountData = await getAccountDataByWhatsappNumber(
+        client,
+        message.WaId
+    );
+    if (accountData === null) {
+        return MessageOperationResult.sendText(getNotRegisteredMessage());
+    }
+    const { rows: foodLogs } = await client.query<{
+        id: number;
+        name: string;
+    }>(sql`
+        SELECT id, food_name as name
+        FROM account_food_log
+        WHERE account_food_log.account_id = ${accountData.accountId}
+        AND account_food_log.date = ${convert(LocalDate.now()).toDate()}
+        AND account_food_log.removed_at IS NULL
+        ORDER BY id
+    `);
+
+    if (foodLogs.length === 0) {
+        return MessageOperationResult.sendText("אין מה למחוק מהתפריט של היום!");
+    }
+
+    const actionContextId = await createAccountActionContext(
+        client,
+        accountData.accountId,
+        {
+            type: "remove",
+            foodLogState: foodLogs,
+        }
+    );
+
+    const { contentVariables, contentSid } =
+        getContentAndVariablesForFoodLogRemoval(actionContextId, foodLogs, 0);
+
+    await twilioClient.messages.create({
+        to: `whatsapp:+${accountData.whatsappNumber}`,
+        from: appConfig.TWILIO_SENDER_NUMBER,
+        contentSid: contentSid,
+        contentVariables: JSON.stringify(contentVariables),
+    });
+
+    return MessageOperationResult.doNothing();
 }

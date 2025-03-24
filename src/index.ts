@@ -80,20 +80,20 @@ router.post("/", async (req, res) => {
                 mediaUrl: null,
             });
             const response = await handleIncomingMessage(client, body);
+            if (response.type === "doNothing") {
+                res.type("text/xml").send(new MessagingResponse().toString());
+                return;
+            }
             const twiml = new MessagingResponse();
-            twiml.message(response);
+            twiml.message(response.text);
             await logMessage(client, {
-                body: response,
+                body: response.text,
                 direction: "OUT",
                 from: "SYSTEM",
                 to: body.WaId,
                 mediaUrl: null,
             });
-            if (process.env.NODE_ENV !== "production") {
-                res.type("text/plain").send(response);
-            } else {
-                res.type("text/xml").send(twiml.toString());
-            }
+            res.type("text/xml").send(twiml.toString());
         }
     } catch (error) {
         console.error(error);

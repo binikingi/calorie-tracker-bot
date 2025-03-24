@@ -17,3 +17,26 @@ export interface MediaMessage {
     MediaUrl0: string;
     MessageType: string;
 }
+
+export type MessageOperationResult =
+    | {
+          type: "sendText";
+          text: string;
+      }
+    | {
+          type: "doNothing";
+      };
+
+export const MessageOperationResult = {
+    sendText(text: string): MessageOperationResult {
+        return {
+            type: "sendText",
+            text,
+        };
+    },
+    doNothing(): MessageOperationResult {
+        return {
+            type: "doNothing",
+        };
+    },
+};
