@@ -144,11 +144,13 @@ export async function getAccountDailyTrack(
         fat_gram: number;
         carb_gram: number;
         calorie: number;
+        removed_at: Date | null;
     }>(sql`
         SELECT *
         FROM account_food_log
         WHERE account_id = ${accountId}
-        AND date = ${convert(parseLocalDateResult).toDate()}    
+        AND date = ${convert(parseLocalDateResult).toDate()}
+        AND removed_at IS NULL
     `);
 
     let totalCalories = 0;
@@ -186,6 +188,7 @@ export async function getAcountCalorieTrackBetweenDates(
         WHERE account_id = ${accountId}
         AND date >= ${convert(parseLocalDateFromResult).toDate()}
         AND date <= ${convert(parseLocalDateToResult).toDate()}
+        AND removed_at IS NULL
         GROUP BY date
     `);
 
@@ -233,6 +236,7 @@ export async function getAccountMenusFromDate(
             WHERE account_id = ${accountId}
             AND date <= ${convert(fromDate).toDate()}
             AND date >= ${convert(fromDate.minusDays(10)).toDate()}
+            AND removed_at IS NULL
             GROUP BY date
             ORDER BY date DESC
     `);
@@ -249,6 +253,7 @@ export async function getAccountMenusFromDate(
         SELECT date
         FROM account_food_log
         WHERE date < ${convert(lowesDate).toDate()}
+        AND removed_at IS NULL
         ORDER BY date DESC
         LIMIT 1
     `);
@@ -284,11 +289,13 @@ export async function getAccountMenuForDate(
         fat_gram: number;
         carb_gram: number;
         calorie: number;
+        removed_at: Date | null;
     }>(sql`
         SELECT *
         FROM account_food_log
         WHERE account_id = ${accountId}
         AND date = ${convert(date).toDate()}
+        AND removed_at IS NULL
     `);
 
     return rows.map((row) => ({

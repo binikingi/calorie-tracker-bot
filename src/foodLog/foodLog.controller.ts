@@ -29,6 +29,7 @@ export async function getFormattedLogMessageByDate(
             WHERE whatsapp_number = ${whatsappNumber}
             AND date >= ${fromDate}
             AND date < ${toDate}
+            AND removed_at IS NULL
         `);
 
     if (rows.length === 0) {
