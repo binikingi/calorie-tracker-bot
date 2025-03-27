@@ -23,7 +23,7 @@ function LoginPage() {
     };
     return (
         <Flex w={"full"} align={"center"} flexDir={"column"} gap={4} p={8}>
-            <Heading size={"4xl"}>ברוכים הבאים ל-EatBot</Heading>
+            <Heading size={"4xl"}>EatBot</Heading>
             <InputGroup dir="ltr" flex="1" startElement={<LuPhone />}>
                 <Input
                     placeholder="מספר טלפון"

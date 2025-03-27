@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EatBot - Calorie Tracker</string>
+    <string name="title_activity_main">EatBot - Calorie Tracker</string>
+    <string name="package_name">com.eatbot.app</string>
+    <string name="custom_url_scheme">com.eatbot.app</string>
+</resources>

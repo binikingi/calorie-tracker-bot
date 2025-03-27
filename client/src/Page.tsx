@@ -1,4 +1,4 @@
-import { Button, Flex, Heading, IconButton } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, IconButton } from "@chakra-ui/react";
 import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import React from "react";
 import { LuArrowRight } from "react-icons/lu";
@@ -26,7 +26,15 @@ export const Page = (props: { children: React.ReactNode }) => {
     };
 
     return (
-        <Flex w={"full"} flexDir={"column"} gap={8}>
+        <Flex
+            h={"full"}
+            w={"full"}
+            flexDir={"column"}
+            gap={2}
+            pt={"env(safe-area-inset-top)"}
+            pb={"env(safe-area-inset-bottom)"}
+            height={"100vh"}
+        >
             <Flex
                 background={useColorModeValue("gray.100", "gray.800")}
                 w={"full"}
@@ -55,7 +63,9 @@ export const Page = (props: { children: React.ReactNode }) => {
                     )}
                 </Flex>
             </Flex>
-            {props.children}
+            <Box width={"full"} overflowY={"auto"}>
+                {props.children}
+            </Box>
         </Flex>
     );
 };
