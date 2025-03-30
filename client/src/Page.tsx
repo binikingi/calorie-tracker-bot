@@ -1,7 +1,7 @@
 import { Box, Button, Flex, Heading, IconButton } from "@chakra-ui/react";
 import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import React from "react";
-import { LuArrowRight } from "react-icons/lu";
+import { LuArrowRight, LuUtensils } from "react-icons/lu";
 import { useAccount } from "./Account/AxccountState";
 import { api } from "./api";
 import { ColorModeButton, useColorModeValue } from "./components/ui/color-mode";
@@ -57,6 +57,15 @@ export const Page = (props: { children: React.ReactNode }) => {
                     </Heading>
                 </Flex>
                 <Flex gap={2}>
+                    {account !== null && (
+                        <IconButton
+                            variant={"ghost"}
+                            onClick={() => navigate({ to: "/food-entry" })}
+                            aria-label="Add Food Entry"
+                        >
+                            <LuUtensils />
+                        </IconButton>
+                    )}
                     <ColorModeButton />
                     {account !== null && (
                         <Button onClick={logOut}>התנתק</Button>

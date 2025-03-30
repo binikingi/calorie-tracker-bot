@@ -16,6 +16,7 @@ import { Route as AuthenticatedImport } from './routes/_authenticated'
 import { Route as IndexImport } from './routes/index'
 import { Route as CodePhoneNumberImport } from './routes/code.$phoneNumber'
 import { Route as AuthenticatedHomeImport } from './routes/_authenticated.home'
+import { Route as AuthenticatedFoodEntryImport } from './routes/_authenticated.food-entry'
 import { Route as AuthenticatedAllmenusImport } from './routes/_authenticated.all_menus'
 import { Route as AuthenticatedAccountImport } from './routes/_authenticated.account'
 import { Route as AuthenticatedMenuDateImport } from './routes/_authenticated.menu.$date'
@@ -48,6 +49,12 @@ const CodePhoneNumberRoute = CodePhoneNumberImport.update({
 const AuthenticatedHomeRoute = AuthenticatedHomeImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+
+const AuthenticatedFoodEntryRoute = AuthenticatedFoodEntryImport.update({
+  id: '/food-entry',
+  path: '/food-entry',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 
@@ -108,6 +115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAllmenusImport
       parentRoute: typeof AuthenticatedImport
     }
+    '/_authenticated/food-entry': {
+      id: '/_authenticated/food-entry'
+      path: '/food-entry'
+      fullPath: '/food-entry'
+      preLoaderRoute: typeof AuthenticatedFoodEntryImport
+      parentRoute: typeof AuthenticatedImport
+    }
     '/_authenticated/home': {
       id: '/_authenticated/home'
       path: '/home'
@@ -137,6 +151,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedAllmenusRoute: typeof AuthenticatedAllmenusRoute
+  AuthenticatedFoodEntryRoute: typeof AuthenticatedFoodEntryRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedMenuDateRoute: typeof AuthenticatedMenuDateRoute
 }
@@ -144,6 +159,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedAllmenusRoute: AuthenticatedAllmenusRoute,
+  AuthenticatedFoodEntryRoute: AuthenticatedFoodEntryRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedMenuDateRoute: AuthenticatedMenuDateRoute,
 }
@@ -158,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/account': typeof AuthenticatedAccountRoute
   '/all_menus': typeof AuthenticatedAllmenusRoute
+  '/food-entry': typeof AuthenticatedFoodEntryRoute
   '/home': typeof AuthenticatedHomeRoute
   '/code/$phoneNumber': typeof CodePhoneNumberRoute
   '/menu/$date': typeof AuthenticatedMenuDateRoute
@@ -169,6 +186,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/account': typeof AuthenticatedAccountRoute
   '/all_menus': typeof AuthenticatedAllmenusRoute
+  '/food-entry': typeof AuthenticatedFoodEntryRoute
   '/home': typeof AuthenticatedHomeRoute
   '/code/$phoneNumber': typeof CodePhoneNumberRoute
   '/menu/$date': typeof AuthenticatedMenuDateRoute
@@ -181,6 +199,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/all_menus': typeof AuthenticatedAllmenusRoute
+  '/_authenticated/food-entry': typeof AuthenticatedFoodEntryRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/code/$phoneNumber': typeof CodePhoneNumberRoute
   '/_authenticated/menu/$date': typeof AuthenticatedMenuDateRoute
@@ -194,6 +213,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/account'
     | '/all_menus'
+    | '/food-entry'
     | '/home'
     | '/code/$phoneNumber'
     | '/menu/$date'
@@ -204,6 +224,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/account'
     | '/all_menus'
+    | '/food-entry'
     | '/home'
     | '/code/$phoneNumber'
     | '/menu/$date'
@@ -214,6 +235,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/account'
     | '/_authenticated/all_menus'
+    | '/_authenticated/food-entry'
     | '/_authenticated/home'
     | '/code/$phoneNumber'
     | '/_authenticated/menu/$date'
@@ -258,6 +280,7 @@ export const routeTree = rootRoute
       "children": [
         "/_authenticated/account",
         "/_authenticated/all_menus",
+        "/_authenticated/food-entry",
         "/_authenticated/home",
         "/_authenticated/menu/$date"
       ]
@@ -271,6 +294,10 @@ export const routeTree = rootRoute
     },
     "/_authenticated/all_menus": {
       "filePath": "_authenticated.all_menus.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/food-entry": {
+      "filePath": "_authenticated.food-entry.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/home": {
