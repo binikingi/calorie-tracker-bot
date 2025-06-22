@@ -26,7 +26,7 @@ export const HistoryPage = () => {
         return () => {
             window.removeEventListener("scroll", onScroll);
         };
-    }, [hasNextPage]);
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
     if (!isSuccess) {
         return <Box>טוען...</Box>;

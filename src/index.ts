@@ -6,7 +6,7 @@ import {
     handleIncomingMediaMessage,
     handleIncomingMessage,
 } from "./messages/messages.controller";
-import MessagingResponse from "twilio/lib/twiml/MessagingResponse";
+// import MessagingResponse from "twilio/lib/twiml/MessagingResponse";
 import { client } from "./db";
 import { logMessage } from "./messagesLog/messagesLog.controller";
 import { appConfig } from "./appConfig";
@@ -22,6 +22,7 @@ import ErrnoException = NodeJS.ErrnoException;
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 import { ollama } from "./Ollama";
+import { twilioClient } from "./twilio.client";
 
 const app = express();
 const router = Router();
@@ -59,16 +60,19 @@ router.post("/", async (req, res) => {
                 mediaUrl: body.MediaUrl0,
             });
             const response = await handleIncomingMediaMessage(client, body);
-            const twiml = new MessagingResponse();
-            twiml.message(response);
+            await twilioClient.messages.create({
+                to: `whatsapp:+${response.number}`,
+                from: appConfig.TWILIO_SENDER_NUMBER,
+                body: response.message,
+            });
             await logMessage(client, {
-                body: response,
+                body: response.message,
                 direction: "OUT",
                 from: "SYSTEM",
                 to: body.WaId,
                 mediaUrl: body.MediaUrl0,
             });
-            res.type("text/xml").send(twiml.toString());
+            res.sendStatus(200);
         } else {
             const body = req.body as Message;
             console.log("message", body.Body);
@@ -81,11 +85,12 @@ router.post("/", async (req, res) => {
             });
             const response = await handleIncomingMessage(client, body);
             if (response.type === "doNothing") {
-                res.type("text/xml").send(new MessagingResponse().toString());
+                res.sendStatus(200);
+                // res.type("text/xml").send(new MessagingResponse().toString());
                 return;
             }
-            const twiml = new MessagingResponse();
-            twiml.message(response.text);
+            // const twiml = new MessagingResponse();
+            // twiml.message(response.text);
             await logMessage(client, {
                 body: response.text,
                 direction: "OUT",
@@ -93,7 +98,13 @@ router.post("/", async (req, res) => {
                 to: body.WaId,
                 mediaUrl: null,
             });
-            res.type("text/xml").send(twiml.toString());
+            await twilioClient.messages.create({
+                to: `whatsapp:+${body.WaId}`,
+                from: appConfig.TWILIO_SENDER_NUMBER,
+                body: response.text,
+            });
+            res.sendStatus(200);
+            // res.type("text/xml").send(twiml.toString());
         }
     } catch (error) {
         console.error(error);

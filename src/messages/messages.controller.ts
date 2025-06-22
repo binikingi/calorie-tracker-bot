@@ -35,10 +35,14 @@ import { assertNever } from "../assertNever";
 export async function handleIncomingMediaMessage(
     client: Client,
     message: MediaMessage
-): Promise<string> {
-    const accountId = await getAccountIdByWhatsappNumber(client, message.WaId);
+): Promise<{ number: string; message: string }> {
+    const number = message.WaId;
+    const accountId = await getAccountIdByWhatsappNumber(client, number);
     if (accountId === null) {
-        return getNotRegisteredMessage();
+        return {
+            number,
+            message: getNotRegisteredMessage(),
+        };
     }
     await clearAccountActionContext(client, accountId);
     const nutritionValues = await getNutritionValuesFromImage(
@@ -74,9 +78,12 @@ export async function handleIncomingMediaMessage(
         });
         addedFoods.push(addedFood);
     }
-    return `הנה מה שהוספתי:\n${addedFoods
-        .map(getFoodDescriptionText)
-        .join("\n")}`;
+    return {
+        number,
+        message: `הנה מה שהוספתי:\n${addedFoods
+            .map(getFoodDescriptionText)
+            .join("\n")}`,
+    };
 }
 
 export async function handleIncomingMessage(
