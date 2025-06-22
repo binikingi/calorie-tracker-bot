@@ -153,7 +153,7 @@ export async function handleIncomingMessage(
         );
     }
 
-    if (message.Body.startsWith("הוסף ")) {
+    if (message.Body.startsWith("הוסף ") || message.Body.startsWith("אכלתי ")) {
         return MessageOperationResult.sendText(
             await handleLogFood(client, message)
         );
@@ -259,9 +259,9 @@ function handleDisplayHelp() {
 
 ☑️ כדי *לתעד מאכל שצרכת*:
 אפשר לצלם תמונה של המנה ואני כבר אעשה את החישובים שצריך או
-רשום ״*הוסף*״ + מה אכלת וכמה אכלת
+רשום ״*אכלתי*״ + מה אכלת וכמה אכלת
 לדוגמא:
-״הוסף 100 גרם אורז לבן״
+אכלתי 100 גרם אורז לבן, 200 גרם חזה עוף״
 ➖➖➖➖➖➖➖➖➖➖
 🔍 כדי לבדוק *שווי קלוריות*:
 רשום ״*בדוק*״ 
@@ -330,7 +330,9 @@ async function handleLogFood(
     client: Client,
     message: Message
 ): Promise<string> {
-    const clearedMessage = message.Body.replace("הוסף", "").trim();
+    const clearedMessage = message.Body.replace("הוסף", "")
+        .replace("אכלתי", "")
+        .trim();
     const nowLocalDate = Instant.now()
         .atZone(ZoneId.of("Asia/Jerusalem"))
         .toLocalDate();
@@ -340,13 +342,6 @@ async function handleLogFood(
         // This means the user is not registered
         return "אתה צריך להירשם למערכת קודם, שלח 'הרשמה'";
     }
-    // const translated = await translatte(message.Body, { to: "en" });
-    // const hasFoodAndDrinks = await checkIfSentenceHasFoodsAndDrinks(
-    //     translated.text
-    // );
-    // if (!hasFoodAndDrinks) {
-    //     return "לא הצלחתי להבין מה להוסיף לתפריט 😔, ננסה שוב?";
-    // }
     const foodNames = clearedMessage.split(",").map((food) => food.trim());
     const { rows } = await client.query<{
         id: number;
@@ -743,7 +738,9 @@ async function handleDeleteFoodLog(
         SELECT id, food_name as name
         FROM account_food_log
         WHERE account_food_log.account_id = ${accountData.accountId}
-        AND account_food_log.date = ${convert(LocalDate.now()).toDate()}
+        AND account_food_log.date = ${convert(
+            Instant.now().atZone(ZoneId.of("Asia/Jerusalem")).toLocalDate()
+        ).toDate()}
         AND account_food_log.removed_at IS NULL
         ORDER BY id
     `);
