@@ -2,7 +2,7 @@ import { convert, Instant, LocalDate, ZoneId } from "@js-joda/core";
 import "@js-joda/timezone";
 import { sql } from "@ts-safeql/sql-tag";
 import { Client } from "pg";
-import translatte from "translatte";
+// import translatte from "translatte";
 import {
     getAccountDataByWhatsappNumber,
     getAccountIdByWhatsappNumber,
@@ -23,7 +23,7 @@ import {
     getNutritionValuesFromImage,
     getNutritionValuesFromText,
 } from "../gpt/gpt.controller";
-import { checkIfSentenceHasFoodsAndDrinks } from "../Ollama";
+// import { checkIfSentenceHasFoodsAndDrinks } from "../Ollama";
 import { twilioClient } from "../twilio.client";
 import {
     MediaMessage,
@@ -340,13 +340,13 @@ async function handleLogFood(
         // This means the user is not registered
         return "אתה צריך להירשם למערכת קודם, שלח 'הרשמה'";
     }
-    const translated = await translatte(message.Body, { to: "en" });
-    const hasFoodAndDrinks = await checkIfSentenceHasFoodsAndDrinks(
-        translated.text
-    );
-    if (!hasFoodAndDrinks) {
-        return "לא הצלחתי להבין מה להוסיף לתפריט 😔, ננסה שוב?";
-    }
+    // const translated = await translatte(message.Body, { to: "en" });
+    // const hasFoodAndDrinks = await checkIfSentenceHasFoodsAndDrinks(
+    //     translated.text
+    // );
+    // if (!hasFoodAndDrinks) {
+    //     return "לא הצלחתי להבין מה להוסיף לתפריט 😔, ננסה שוב?";
+    // }
     const foodNames = clearedMessage.split(",").map((food) => food.trim());
     const { rows } = await client.query<{
         id: number;

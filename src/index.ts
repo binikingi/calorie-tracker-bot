@@ -19,9 +19,9 @@ import {
 import { apiRouter } from "./api.routes";
 import fs from "fs";
 import ErrnoException = NodeJS.ErrnoException;
-import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
-import { ollama } from "./Ollama";
+// import { z } from "zod";
+// import zodToJsonSchema from "zod-to-json-schema";
+// import { ollama } from "./Ollama";
 import { twilioClient } from "./twilio.client";
 
 const app = express();
@@ -128,42 +128,42 @@ router.post("/logout", async (req, res) => {
 //     list: z.array(z.string()),
 // });
 
-const GetItemsFromImageReturnType = z.object({
-    data: z.array(
-        z.object({
-            name: z.string(),
-            amount: z.string(),
-        })
-    ),
-});
+// const GetItemsFromImageReturnType = z.object({
+//     data: z.array(
+//         z.object({
+//             name: z.string(),
+//             amount: z.string(),
+//         })
+//     ),
+// });
 
-router.post("/ollama/:model", async (req, res) => {
-    console.log("request ollama", req.body);
-    const model = req.params.model;
-    const imageUrl = req.body.imageUrl;
-    console.log();
-    console.time("ollama");
-    const schema = zodToJsonSchema(GetItemsFromImageReturnType);
-    console.log(JSON.stringify(schema, null, 2));
-    const response = await ollama.chat({
-        model: model,
-        format: schema,
-        options: {
-            temperature: 0.2,
-        },
-        messages: [
-            {
-                role: "user",
-                content: req.body.question,
-                images: [await getFileBufferFromUrl(imageUrl)],
-            },
-        ],
-    });
-    console.timeEnd("ollama");
-    const parsed = JSON.parse(response.message.content);
-    console.log(parsed);
-    res.json(parsed);
-});
+// router.post("/ollama/:model", async (req, res) => {
+//     console.log("request ollama", req.body);
+//     const model = req.params.model;
+//     const imageUrl = req.body.imageUrl;
+//     console.log();
+//     console.time("ollama");
+//     const schema = zodToJsonSchema(GetItemsFromImageReturnType);
+//     console.log(JSON.stringify(schema, null, 2));
+//     const response = await ollama.chat({
+//         model: model,
+//         format: schema,
+//         options: {
+//             temperature: 0.2,
+//         },
+//         messages: [
+//             {
+//                 role: "user",
+//                 content: req.body.question,
+//                 images: [await getFileBufferFromUrl(imageUrl)],
+//             },
+//         ],
+//     });
+//     console.timeEnd("ollama");
+//     const parsed = JSON.parse(response.message.content);
+//     console.log(parsed);
+//     res.json(parsed);
+// });
 
 router.use(apiRouter);
 
@@ -214,13 +214,13 @@ async function main() {
 
 main().catch((error) => console.error(error));
 
-async function getFileBufferFromUrl(
-    imageUrl: string
-): Promise<Uint8Array<ArrayBufferLike>> {
-    const response = await fetch(imageUrl);
-    const blob = await response.blob();
-    const arrayBuffer = await blob.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
+// async function getFileBufferFromUrl(
+//     imageUrl: string
+// ): Promise<Uint8Array<ArrayBufferLike>> {
+//     const response = await fetch(imageUrl);
+//     const blob = await response.blob();
+//     const arrayBuffer = await blob.arrayBuffer();
+//     const uint8Array = new Uint8Array(arrayBuffer);
 
-    return uint8Array; // Wrap in an array if you need Uint8Array[]
-}
+//     return uint8Array; // Wrap in an array if you need Uint8Array[]
+// }
