@@ -72,7 +72,7 @@ router.post("/", async (req, res) => {
                 to: body.WaId,
                 mediaUrl: body.MediaUrl0,
             });
-            res.sendStatus(201);
+            res.sendStatus(204);
         } else {
             const body = req.body as Message;
             console.log("message", body.Body);
@@ -85,7 +85,7 @@ router.post("/", async (req, res) => {
             });
             const response = await handleIncomingMessage(client, body);
             if (response.type === "doNothing") {
-                res.sendStatus(201);
+                res.sendStatus(204);
                 // res.type("text/xml").send(new MessagingResponse().toString());
                 return;
             }
@@ -103,7 +103,7 @@ router.post("/", async (req, res) => {
                 from: appConfig.TWILIO_SENDER_NUMBER,
                 body: response.text,
             });
-            res.sendStatus(201);
+            res.sendStatus(204);
             // res.type("text/xml").send(twiml.toString());
         }
     } catch (error) {
