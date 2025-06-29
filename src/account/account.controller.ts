@@ -1,6 +1,8 @@
 import { convert, LocalDate, nativeJs } from "@js-joda/core";
 import { sql } from "@ts-safeql/sql-tag";
 import { Client } from "pg";
+import { twilioClient } from "../twilio.client";
+import { appConfig } from "../appConfig";
 
 export async function getAccountDataByWhatsappNumber(
     client: Client,
@@ -353,5 +355,19 @@ export async function registerUser(
         RETURNING id
     `);
 
+    await notifyNewUserCreated(whatsappNumber);
+
     return newUser.id;
+}
+
+async function notifyNewUserCreated(whatsappNumber: string) {
+    try {
+        await twilioClient.messages.create({
+            to: `whatsapp:+972556620094`,
+            from: appConfig.TWILIO_SENDER_NUMBER,
+            body: `New user create on EatBot: ${whatsappNumber}!!`,
+        });
+    } catch {
+        console.log(`Error notifying on new user created :(`);
+    }
 }
