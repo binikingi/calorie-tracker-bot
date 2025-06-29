@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { openaiClient } from "./openaiClient";
-import zodToJsonSchema from "zod-to-json-schema";
+import { zodTextFormat } from "openai/helpers/zod";
 import axios from "axios";
 
 const nutritionValuesSchema = z.object({
@@ -20,78 +20,71 @@ export type NutritionValues = z.infer<typeof nutritionValuesSchema>;
 export async function getNutritionValuesFromText(
     userMessage: string
 ): Promise<NutritionValues> {
-    const response = await openaiClient.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
+    const response = await openaiClient.responses.parse({
+        model: "o4-mini-2025-04-16",
+        input: [
             {
-                role: "system",
-                content: `אתה יודע לתת ערכים תזונתיים של כל אוכל שיביאו לך. אתה אמור להחיזר את כמות החלבונים, פחמימות, שומנים וקלוריות של האוכל ששואלים אותך עליהם. במקרה שאתה לא יודע פשוט תחזיר null במקום ערך מספרי.
-          את השמות של המוצרים תחזיר בדיוק באותו שם שנכתבו לך אל תחליך לשפה אחרת או תשנה שום דבר בשם`,
+                role: "developer",
+                content: [
+                    {
+                        type: "input_text",
+                        text: "אתה יודע לתת ערכים תזונתיים של כל אוכל שיביאו לך. אתה אמור להחיזר את כמות החלבונים, פחמימות, שומנים וקלוריות של האוכל ששואלים אותך עליהם. במקרה שאתה לא יודע פשוט תחזיר null במקום ערך מספרי.\n          את השמות של המוצרים תחזיר בדיוק באותו שם שנכתבו לך אל תחליך לשפה אחרת או תשנה שום דבר בשם",
+                    },
+                ],
             },
             {
                 role: "user",
                 content: `תחזיר לי את הערכים התזונתיים שיש במאכלים האלה: ${userMessage}`,
             },
         ],
-        temperature: 0.5,
-        response_format: {
-            type: "json_schema",
-            json_schema: {
-                name: "NutritionValues",
-                schema: zodToJsonSchema(nutritionValuesSchema),
-            },
+        store: false,
+        stream: false,
+        reasoning: {
+            effort: "medium",
+        },
+        text: {
+            format: zodTextFormat(nutritionValuesSchema, "NutritionalValues"),
         },
     });
 
-    const res = JSON.parse(
-        response.choices[0].message.content ?? "{data: []}"
-    ) as NutritionValues;
-    console.log("chatgpt response", JSON.stringify(res, null, 2));
-    return res;
+    console.log(
+        "chatgpt response",
+        JSON.stringify(response.output_parsed, null, 2)
+    );
+    return { data: response.output_parsed?.data ?? [] };
 }
 
 export async function getNutritionValuesFromImage(
     imageUrl: string
 ): Promise<NutritionValues> {
-    const response = await openaiClient.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-            //       {
-            //           role: "assistant",
-            //           content: `אתה יודע לתת ערכים תזונתיים של כל אוכל שיביאו לך. אתה אמור להחיזר את כמות החלבונים, פחמימות, שומנים וקלוריות של האוכל ששואלים אותך עליהם. במקרה שאתה לא יודע פשוט תחזיר null במקום ערך מספרי.
-            // את השמות של המוצרים תחזיר בעברית`,
-            //       },
+    const response = await openaiClient.responses.parse({
+        model: "o4-mini-2025-04-16",
+        input: [
             {
                 role: "user",
                 content: [
                     {
-                        type: "text",
+                        type: "input_text",
                         text: `תחזיר לי את כל המרכיבים שיש בארוחה הזאת עם פירוט של חלבונים, שומנים, פחמימות וקלוריות לכל מרכיב. התמונה נמצאת בקישור הבא. תחזיר את כל השמות של המרכיבים בעברית. תנסה להיות כמה שיותר מדויק בחישוב. אם יש פעמיים משהו תחשב אותו לפי מספר הפעמים שהוא בתמונה`,
                     },
                     {
-                        type: "image_url",
-                        image_url: {
-                            url: await getBase64FromUrl(imageUrl),
-                        },
+                        type: "input_image",
+                        image_url: await getBase64FromUrl(imageUrl),
+                        detail: "high",
                     },
                 ],
             },
         ],
-        temperature: 0.5,
-        response_format: {
-            type: "json_schema",
-            json_schema: {
-                name: "NutritionValues",
-                schema: zodToJsonSchema(nutritionValuesSchema),
-            },
+        text: {
+            format: zodTextFormat(nutritionValuesSchema, "NutritionalValues"),
         },
     });
 
-    const res = JSON.parse(
-        response.choices[0].message.content ?? "{data: []}"
-    ) as NutritionValues;
-    console.log("chatgpt response", JSON.stringify(res, null, 2));
-    return res;
+    console.log(
+        "chatgpt response",
+        JSON.stringify(response.output_parsed, null, 2)
+    );
+    return { data: response.output_parsed?.data ?? [] };
 }
 
 async function getBase64FromUrl(url: string) {

@@ -2,7 +2,6 @@ import { convert, Instant, LocalDate, ZoneId } from "@js-joda/core";
 import "@js-joda/timezone";
 import { sql } from "@ts-safeql/sql-tag";
 import { Client } from "pg";
-// import translatte from "translatte";
 import {
     getAccountDataByWhatsappNumber,
     getAccountIdByWhatsappNumber,
