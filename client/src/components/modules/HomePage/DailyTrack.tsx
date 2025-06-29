@@ -45,7 +45,7 @@ export const DailyTrack = () => {
                         <Link
                             target="_blank"
                             variant={"underline"}
-                            href={`https://wa.me/97233820518?text=עזרה`}
+                            href={`https://wa.me/97233820518?text=%3F`}
                         >
                             להוספה דברו עם הבוט שלנו
                         </Link>
