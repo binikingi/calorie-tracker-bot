@@ -38,7 +38,7 @@ router.get("/health", (_, res) => {
 });
 
 router.get("/whatsapp", (_, res) => {
-    res.redirect("https://wa.me/97233820518?text=הרשמה");
+    res.redirect("https://wa.me/97233820518?text=%3F");
 });
 
 router.post("/", async (req, res) => {

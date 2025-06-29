@@ -42,7 +42,7 @@ export const EnterLoginCodePage = (props: { phoneNumber: string }) => {
                 setError(fetchErrorMessage(error));
             }
         }
-    }, [code]);
+    }, [code, navigate, props.phoneNumber, setAccount]);
     return (
         <Flex w={"full"} align={"center"} flexDir={"column"} gap={4} p={8}>
             <Heading size={"4xl"}>הכנס את הקוד שקיבלת בהודעה</Heading>

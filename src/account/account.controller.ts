@@ -6,7 +6,7 @@ export async function getAccountDataByWhatsappNumber(
     client: Client,
     whatsappNumber: string
 ) {
-    const { rows } = await client.query<{
+    let { rows } = await client.query<{
         id: number;
         whatsapp_number: string;
         weight: number | null;
@@ -20,7 +20,23 @@ export async function getAccountDataByWhatsappNumber(
     `);
 
     if (rows.length === 0) {
-        return null;
+        const id = await registerUser(client, whatsappNumber);
+        const {
+            rows: [user],
+        } = await client.query<{
+            id: number;
+            whatsapp_number: string;
+            weight: number | null;
+            height: number | null;
+            year_of_birth: number | null;
+            gender: string | null;
+        }>(sql`
+            SELECT *
+            FROM account
+            WHERE id = ${id}
+        `);
+
+        rows = [user];
     }
 
     return {
@@ -90,7 +106,7 @@ export async function getAccountDataById(client: Client, id: number) {
 export async function getAccountIdByWhatsappNumber(
     client: Client,
     whatsappNumber: string
-): Promise<number | null> {
+): Promise<number> {
     const { rows } = await client.query<{ id: number }>(sql`
       SELECT id
       FROM account
@@ -98,7 +114,7 @@ export async function getAccountIdByWhatsappNumber(
     `);
 
     if (rows.length === 0) {
-        return null;
+        return registerUser(client, whatsappNumber);
     }
     return rows[0].id;
 }
@@ -306,4 +322,36 @@ export async function getAccountMenuForDate(
         carbs: row.carb_gram,
         calories: row.calorie,
     }));
+}
+
+export async function registerUser(
+    client: Client,
+    whatsappNumber: string
+): Promise<number> {
+    const { rows } = await client.query<{
+        id: number;
+        whatsapp_number: string;
+        weight: number | null;
+        height: number | null;
+        year_of_birth: number | null;
+        gender: string | null;
+    }>(sql`
+        SELECT *
+        FROM account
+        WHERE whatsapp_number = ${whatsappNumber}
+    `);
+
+    if (rows.length > 0) {
+        return rows[0].id;
+    }
+
+    const {
+        rows: [newUser],
+    } = await client.query<{ id: number }>(sql`
+        INSERT INTO account (whatsapp_number)
+        VALUES (${whatsappNumber})
+        RETURNING id
+    `);
+
+    return newUser.id;
 }

@@ -7,6 +7,7 @@ export const api = axios.create({
     },
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function fetchErrorMessage(error: any) {
     if (error.isAxiosError && error.response?.data?.error) {
         return error.response.data.error;
@@ -27,6 +28,8 @@ export const getAuthorizationHeader = () => {
                 Authorization: `Bearer ${account.token}`,
             };
         }
-    } catch {}
+    } catch {
+        // Nothing
+    }
     return {};
 };

@@ -24,13 +24,13 @@ import {
     getNutritionValuesFromText,
 } from "../gpt/gpt.controller";
 // import { checkIfSentenceHasFoodsAndDrinks } from "../Ollama";
+import { assertNever } from "../assertNever";
 import { twilioClient } from "../twilio.client";
 import {
     MediaMessage,
     Message,
     MessageOperationResult,
 } from "./messages.interfaces";
-import { assertNever } from "../assertNever";
 
 export async function handleIncomingMediaMessage(
     client: Client,
@@ -38,12 +38,6 @@ export async function handleIncomingMediaMessage(
 ): Promise<{ number: string; message: string }> {
     const number = message.WaId;
     const accountId = await getAccountIdByWhatsappNumber(client, number);
-    if (accountId === null) {
-        return {
-            number,
-            message: getNotRegisteredMessage(),
-        };
-    }
     await clearAccountActionContext(client, accountId);
     const nutritionValues = await getNutritionValuesFromImage(
         message.MediaUrl0
@@ -90,15 +84,7 @@ export async function handleIncomingMessage(
     client: Client,
     message: Message
 ): Promise<MessageOperationResult> {
-    if (message.Body === "הרשמה") {
-        return MessageOperationResult.sendText(
-            await handleRegistration(client, message)
-        );
-    }
     const accountId = await getAccountIdByWhatsappNumber(client, message.WaId);
-    if (accountId === null) {
-        return MessageOperationResult.sendText(getNotRegisteredMessage());
-    }
 
     const currentActionContext = await getAccountActionContext(
         client,
@@ -301,31 +287,6 @@ function handleDisplayHelp() {
     return message;
 }
 
-async function handleRegistration(client: Client, message: Message) {
-    const { rows } = await client.query<{
-        id: number;
-        whatsapp_number: string;
-        weight: number | null;
-        height: number | null;
-        year_of_birth: number | null;
-        gender: string | null;
-    }>(sql`
-    SELECT *
-    FROM account
-    WHERE whatsapp_number = ${message.WaId}
-    `);
-    if (rows.length > 0) {
-        return `אתה כבר רשום למערכת, שלח '?' לעזרה`;
-    } else {
-        await client.query(sql`
-        INSERT INTO account (whatsapp_number)
-        VALUES (${message.WaId})
-    `);
-
-        return "ברוכים הבאים ל-EatBot\nנרשמת בהצלחה למערכת, שלח '?' לעזרה";
-    }
-}
-
 async function handleLogFood(
     client: Client,
     message: Message
@@ -338,10 +299,7 @@ async function handleLogFood(
         .toLocalDate();
     const date = convert(nowLocalDate).toDate();
     const accountId = await getAccountIdByWhatsappNumber(client, message.WaId);
-    if (accountId === null) {
-        // This means the user is not registered
-        return "אתה צריך להירשם למערכת קודם, שלח 'הרשמה'";
-    }
+
     const foodNames = clearedMessage.split(",").map((food) => food.trim());
     const { rows } = await client.query<{
         id: number;
@@ -602,9 +560,6 @@ async function handleAccountMeasures(client: Client, message: Message) {
             client,
             message.WaId
         );
-        if (accountData === null) {
-            return getNotRegisteredMessage();
-        }
         const measure =
             accountData[accountMeasuresMap[message.Body]] ?? "לא נקבע";
         return `ה${message.Body} המעודכן הוא: ${measure}`;
@@ -684,9 +639,6 @@ async function handleCalculateDailyCalories(
         client,
         message.WaId
     );
-    if (accountData === null) {
-        return getNotRegisteredMessage();
-    }
 
     if (
         accountData.gender === null ||
@@ -728,9 +680,6 @@ async function handleDeleteFoodLog(
         client,
         message.WaId
     );
-    if (accountData === null) {
-        return MessageOperationResult.sendText(getNotRegisteredMessage());
-    }
     const { rows: foodLogs } = await client.query<{
         id: number;
         name: string;

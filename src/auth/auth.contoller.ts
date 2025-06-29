@@ -27,17 +27,10 @@ export async function handleLogin(
         whatsappNumber
     );
 
-    let code: string;
-    if (accountData === null) {
-        const { rows } = await client.query<{ id: number }>(sql`
-            INSERT INTO account (whatsapp_number)
-            VALUES (${whatsappNumber})
-            RETURNING id
-        `);
-        code = await generateLoginCodeForAccount(client, rows[0].id);
-    } else {
-        code = await generateLoginCodeForAccount(client, accountData.accountId);
-    }
+    const code = await generateLoginCodeForAccount(
+        client,
+        accountData.accountId
+    );
 
     await twilioClient.messages.create({
         to: `whatsapp:+${whatsappNumber}`,
