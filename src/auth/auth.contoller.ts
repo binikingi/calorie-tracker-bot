@@ -39,7 +39,7 @@ export async function handleLogin(
         contentVariables: JSON.stringify({ 1: code }),
     });
 
-    return res.status(200).json({ code });
+    return res.sendStatus(200);
 }
 
 export async function handleCodeVerification(
